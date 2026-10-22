@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Keeper of the Cold Lights</title>
+<style>
+  html,body{margin:0;height:100%;background:#07090b;overflow:hidden;touch-action:none;
+    font-family:"Courier New",Courier,monospace;color:#c4cbc8;-webkit-user-select:none;user-select:none}
+  #stage{position:fixed;inset:0;}
+  #c{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;background:#07090b}
+  #vig{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(circle at 50% 50%,rgba(7,9,11,0) 45%,rgba(7,9,11,.45) 75%,rgba(7,9,11,.92) 100%);}
+  #hud{position:absolute;left:0;right:0;bottom:0;padding:0 8% 6%;pointer-events:none;
+    font-size:11px;letter-spacing:.08em;text-shadow:0 1px 0 #000}
+  #bar{height:6px;border:1px solid #9aa4a1;padding:1px;width:100%;box-sizing:border-box;margin-bottom:6px}
+  #oil{height:100%;background:#c4cbc8;width:100%}
+  #sbar{height:3px;border:1px solid #6c7674;padding:0;width:100%;box-sizing:border-box;margin:3px 0 6px}
+  #stam{height:100%;background:#8f9a97;width:100%}
+  #title.back{pointer-events:auto}
+  #inv{display:flex;justify-content:flex-end;gap:8px;margin-bottom:5px;height:16px}
+  #inv svg{width:16px;height:16px;fill:none;stroke:#e6ebe8;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:square;shape-rendering:crispEdges;opacity:.9}
+  #inv svg.dim{opacity:.35}
+  #inv svg.off{display:none}
+  #ic-map{pointer-events:auto;cursor:pointer}
+  #row{display:flex;justify-content:space-between}
+  #joy{position:absolute;width:56px;height:56px;border:1px solid rgba(196,203,200,.5);border-radius:50%;
+    pointer-events:none;display:none;transform:translate(-50%,-50%)}
+  #joy i{position:absolute;left:50%;top:50%;width:14px;height:14px;border-radius:50%;background:#c4cbc8;
+    transform:translate(-50%,-50%)}
+  #msg{position:absolute;left:0;right:0;top:10%;text-align:center;font-size:12px;letter-spacing:.12em;
+    pointer-events:none;text-shadow:0 1px 0 #000;transition:opacity .6s;opacity:0}
+  #msg.speech{left:50%;right:auto;transform:translateX(-50%);width:min(58vw,260px);top:5%;padding:10px 12px;font-size:11px;border:1px solid rgba(196,203,200,.45);background:rgba(7,9,11,.55);line-height:1.5;letter-spacing:.08em}
+  #title{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;background:rgba(7,9,11,.72);pointer-events:none;transition:opacity .8s}
+  #title h1{font-weight:normal;font-size:16px;letter-spacing:.3em;margin:0 0 14px}
+  #title p{margin:4px 0;font-size:11px;letter-spacing:.1em;opacity:.8}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div id="vig"></div>
+  <div id="joy"><i></i></div>
+  <div id="msg"></div>
+  <div id="hud">
+    <div id="inv">
+      <svg id="ic-lamp" viewBox="0 0 16 16"><path d="M6 1.5h4M8 1.5v2M5 3.5h6M5.5 3.5v2M10.5 3.5v2M4.5 5.5h7v7h-7zM4.5 12.5h7M6 14.5h4M6.5 7.5h3v3h-3z"/></svg>
+      <svg id="ic-map" class="off" viewBox="0 0 16 16"><path d="M2.5 3.5l4-1.5 3 1.5 4-1.5v10l-4 1.5-3-1.5-4 1.5zM6.5 2v10M9.5 3.5v10M4 8l2-1.5 3 1 3-1.5"/></svg>
+      <svg id="ic-lens" class="off" viewBox="0 0 16 16"><path d="M8 2.5a5.5 5.5 0 1 0 0 11a5.5 5.5 0 1 0 0-11zM8 5.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5zM8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15"/></svg>
+      <svg id="ic-bell" class="off" viewBox="0 0 16 16"><path d="M8 2.5a5.5 5.5 0 1 0 0 11a5.5 5.5 0 1 0 0-11zM8 3v3M6.5 6h3v4h-3zM3 8h1M12 8h1"/></svg>
+      <svg id="ic-obelisk" class="off" viewBox="0 0 16 16"><path d="M8 1.5l2 3v8.5h-4v-8.5zM4.5 13h7M3.5 14.5h9M8 6.5v3"/></svg>
+    </div>
+    <div id="bar"><div id="oil"></div></div>
+    <div id="sbar"><div id="stam"></div></div>
+    <div id="row"><span id="lights">lights 0/7</span><span id="hint">oil</span></div>
+  </div>
+  <div id="title">
+    <h1>KEEPER OF THE COLD LIGHTS</h1>
+    <p id="tapline">tap</p>
+    <div id="brief" style="display:none">
+      <p>The river is behind you. Everything else is east.</p>
+      <p>Hold and drag anywhere to walk. Stay on the trail.</p>
+      <p>Tap anywhere to light the lantern or put it out. It burns oil.</p>
+      <p>Wolves keep to the lantern's edge. Past the wolves is something else.</p>
+      <p>Someone is drumming at the edge of the village.</p>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+// ---------- setup ----------
+let W = 320, H = 320; const T = 8;
+const stage = document.getElementById('stage');
+const out = document.getElementById('c');
+const octx = out.getContext('2d');
+const scene = document.createElement('canvas');
+const sctx = scene.getContext('2d', { willReadFrequently: true });
+let outImg, lum, acc, tmp, tmp2, sat, sat2, rad, lmap;
+function fit(){ let asp = innerWidth/innerHeight; if (!isFinite(asp) || asp <= 0) asp = 1;                     // an embedded viewer can report a zero-height window at load
+  asp = Math.min(4, Math.max(0.25, asp)); W = Math.round(Math.sqrt(165000*asp)/4)*4; H = Math.round(165000/W/4)*4;
+  W = Math.max(96, Math.min(1024, W)); H = Math.max(96, Math.min(1024, H));
+  out.width = W; out.height = H; scene.width = W; scene.height = H; outImg = octx.createImageData(W, H);
+  lum = new Float32Array(W*H); acc = new Float32Array(W*H); tmp = new Float32Array(W*H); tmp2 = acc; lmap = new Float32Array((W>>1)*(H>>1) + W);
+  sat = new Float64Array((W+1)*(H+1)); sat2 = new Float64Array((W+1)*(H+1)); rad = new Float32Array(W*H);
+  // focus is a disc on the player; blur grows with distance from him in every direction
+  const R = Math.min(W,H)/2, focus = 0.34, edge = 1.4;
+  for (let y = 0, i = 0; y < H; y++) for (let x = 0; x < W; x++, i++){ const d = Math.hypot(x-W/2, y-H/2)/R;
+    const k = Math.min(1, Math.max(0, (d-focus)/(edge-focus))); rad[i] = 4*Math.pow(k, 1.4); } }   // a fractional radius: the blur eases in from nothing instead of stepping
+addEventListener('resize', () => setTimeout(fit, 50)); fit();
+addEventListener('load', () => { try { audio.start(); } catch (e) {} });
+setTimeout(() => { if (innerWidth > 0 && innerHeight > 0) fit(); }, 300);   // and again once the viewer has settled
+
+const TONES = [[10,13,17],[30,38,46],[52,64,72],[82,96,104],[112,126,132],[142,154,158],[178,188,188],[214,220,216]];   // eight steps of the same cold ink
+const EMBER = [[168,64,18],[224,122,52]];
+const BAYER = [0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
+const GRAIN = new Float32Array(4096); for (let i = 0; i < 4096; i++) GRAIN[i] = (Math.random()-0.5)*0.02;   // film grain from a table, not a random call per pixel
+const EM = '#ff4000';
+function tone(v){ const g = Math.round(v*255); return `rgb(${g},${g},${g})`; }
+
+const treeCache = {};
+function treeSprite(s){ if (treeCache[s]) return treeCache[s]; const c = document.createElement('canvas'); c.width = 7; c.height = s; const g = c.getContext('2d');   // one canvas per size, drawn once
+  g.fillStyle = tone(0.14); for (let i = 0; i < s; i++){ const w = Math.max(1, Math.round((i/s)*5)); g.fillRect(3-Math.floor(w/2), i, w, 1); } g.fillStyle = tone(0.55); g.fillRect(4, s-4, 1, 3);
+  return treeCache[s] = c; }
+function shadow(x, y, w, h){ for (let i = 0; i < h; i++){ const k = i/h, ww = Math.round(w*(1 - k*0.55)); sctx.fillRect(x + Math.round(k*w*0.25), y + i, ww, 1); } }   // a soft wedge, not a hard ellipse
+// ---------- noise ----------
+function hash(x, y){ let n = Math.imul(x|0, 374761393) + Math.imul(y|0, 668265263);
+  n = Math.imul(n ^ (n >>> 13), 1274126177); return ((n ^ (n >>> 16)) >>> 0) / 4294967296; }
+function vnoise(x, y){ const xi = Math.floor(x), yi = Math.floor(y), fx = x-xi, fy = y-yi;
+  const sx = fx*fx*(3-2*fx), sy = fy*fy*(3-2*fy);
+  const a = hash(xi,yi), b = hash(xi+1,yi), c = hash(xi,yi+1), d = hash(xi+1,yi+1);
+  return a + (b-a)*sx + (c-a)*sy + (a-b-c+d)*sx*sy; }
+function fbm(x, y){ return (0.5*vnoise(x,y) + 0.25*vnoise(x*2+7,y*2+3) + 0.125*vnoise(x*4+13,y*4+9)
+  + 0.0625*vnoise(x*8+31,y*8+17)) / 0.9375; }
+
+// ---------- world: river on the west edge, village, woods thickening east, ruins, then the tower ----------
+const WX = 212, WY = 150, RIVER = 14, VX = 27, VY = 75, TOWER = { tx: 185, ty: 75 };
+const CIST = { tx: 119, ty: 8 }, BARROW = { tx: 153, ty: 138 };                                    // north: the cistern. south: the barrow.
+const SITES = { tower: TOWER, cistern: CIST, barrow: BARROW };
+const ROAD_PTS = [[27,87.1],[36,87.4],[37,87.4],[39,87.4],[40,87.4],[42,87.4],[44,87.5],[45,87.2],[47,86.4],[48,85.7],[50,85.1],[51,85.4],[53,86.5],[55,87.9],[56,89.1],[58,89.7],[59,90.1],[61,90.9],[63,91.9],[64,92.8],[66,93.1],[68,92.8],[70,92.2],[71,91.6],[73,91.6],[74,92.4],[76,94.2],[78,96.0],[79,97.2],[81,97.5],[82,96.5],[84,94.8],[85,92.8],[87,91.0],[89,89.7],[90,89.0],[92,88.6],[93,88.4],[95,88.4],[97,88.7],[98,89.1],[100,89.6],[101,90.0],[103,90.2],[104,90.4],[106,90.5],[108,90.3],[109,89.8],[111,88.9],[112,87.7],[114,86.7],[115,85.7],[117,85.1],[119,84.6],[120,84.4],[122,84.4],[123,84.7],[125,85.2],[127,85.9],[128,86.7],[130,87.3],[131,87.7],[133,88.0],[134,88.2],[136,88.1],[138,88.1],[139,88.2],[141,88.2],[142,88.2],[144,87.6],[146,86.6],[147,85.5],[149,84.1],[150,83.0],[152,82.1],[153,81.5],[155,81.1],[157,80.0],[158,78.4],[160,76.4],[161,74.9],[163,73.8],[164,73.2],[166,73.4],[168,74.1],[169,75.4],[171,76.2],[172,76.5],[174,76.2],[176,75.8],[177,75.6],[185,75.5]];
+const NORTH_PTS = [[31,47.6],[34,46.7],[37,45.3],[40,42.8],[43,40.7],[46,38.9],[49,37.7],[52,36.2],[55,34.3],[58,32.1],[61,30.5],[64,29.8],[67,29.8],[70,30.0],[73,30.2],[76,30.0],[79,29.1],[82,27.1],[85,24.6],[88,22.5],[91,20.8],[94,19.5],[97,18.0],[100,15.9],[103,14.2],[106,13.0],[109,12.3],[112,12.0],[115,11.9],[118,11.9]];
+const SOUTH_PTS = [[36,109.3],[39,114.3],[42,119.4],[45,126.0],[48,129.6],[51,131.4],[54,132.5],[57,133.3],[60,133.9],[63,134.2],[66,134.2],[69,134.1],[72,133.9],[75,133.7],[78,133.2],[81,132.7],[84,132.2],[87,132.2],[90,132.9],[93,134.3],[96,135.8],[99,136.9],[102,137.4],[105,137.8],[108,137.9],[111,137.9],[114,137.7],[117,136.9],[120,136.3],[123,135.7],[126,135.3],[129,134.5],[132,133.3],[135,131.7],[138,130.4],[141,129.7],[144,130.2],[147,131.7],[150,132.6],[152,133.3]];
+// the three paths are the ones drawn by hand on the hide; each is a table of points, read by straight lines between them
+function alongPath(P, tx){ if (tx <= P[0][0]) return P[0][1]; if (tx >= P[P.length-1][0]) return P[P.length-1][1];
+  let lo = 0, hi = P.length-1; while (hi - lo > 1){ const m = (lo + hi) >> 1; if (P[m][0] <= tx) lo = m; else hi = m; }
+  const [x0, y0] = P[lo], [x1, y1] = P[hi]; return y0 + (y1 - y0)*(tx - x0)/(x1 - x0); }
+function road(tx){ return alongPath(ROAD_PTS, tx); }
+function branchN(tx){ if (tx < NORTH_PTS[0][0] || tx > NORTH_PTS[NORTH_PTS.length-1][0]) return null; return alongPath(NORTH_PTS, tx); }
+function branchS(tx){ if (tx < SOUTH_PTS[0][0] || tx > SOUTH_PTS[SOUTH_PTS.length-1][0]) return null; return alongPath(SOUTH_PTS, tx); }
+const terrainCache = new Map();
+let mapKnown = false;   // the branch paths are not there until he has shown them to you
+function terrain(tx, ty){
+  const k = tx*4096+ty; let v = terrainCache.get(k); if (v !== undefined) return v;
+  let type;
+  const dv = Math.hypot(tx-VX, ty-VY), dt = Math.hypot(tx-TOWER.tx, ty-TOWER.ty), dc = Math.hypot(tx-CIST.tx, ty-CIST.ty), db = Math.hypot(tx-BARROW.tx, ty-BARROW.ty), bn = branchN(tx), bs = branchS(tx);
+  const h = fbm(tx*0.045, ty*0.045), m = fbm(tx*0.08+100, ty*0.08+100);
+  const density = Math.min(0.9, Math.max(0, (tx-34)/190));           // woods thicken east
+  if (tx < RIVER) type = 'water';
+  else if (tx < RIVER+3) type = 'bank';
+  else if (ty < 2 || ty > WY-2 || tx > WX-3) type = 'rock';
+  else if (dt < 16) type = 'obsidian';
+  else if (dc < 5 || db < 5) type = 'obsidian';
+  else if (dc < 9 || db < 9) type = 'snow';
+  else if (dv < 11) type = 'snow';
+  else if (tx <= TOWER.tx && Math.abs(ty - road(tx)) < 1.8*Math.sqrt(1 + Math.pow(road(tx+1) - road(tx), 2))) type = 'trail';   // the road ends at the tower
+  else if (tx > TOWER.tx + 18) type = 'rock';                                                                                                   // and past the tower there is nothing to walk on                  // a road that climbs is measured across itself, not straight down, so it never thins on a slope
+  else if (mapKnown && ((bn !== null && Math.abs(ty - bn) < 1.8*Math.sqrt(1 + Math.pow((branchN(tx+1) ?? bn) - bn, 2))) || (bs !== null && Math.abs(ty - bs) < 1.8*Math.sqrt(1 + Math.pow((branchS(tx+1) ?? bs) - bs, 2))))) type = 'trail';
+  else if (h < 0.30 && tx < 220) type = 'ice';
+  else if (h > 0.76 && tx > 44) type = 'rock';
+  else if (m > 0.74 - density*0.55) type = 'forest';
+  else type = 'snow';
+  if (dt >= 16 && dt < 36 && hash(tx*7, ty*3) < (36-dt)/22) type = 'obsidian'; // stone bleeds into the woods
+  // piers reach into the river
+  if (tx >= RIVER-7 && tx < RIVER+3 && [58,66,84,92].some(p => ty === p || ty === p+1)) type = 'pier';   // two planks wide
+  terrainCache.set(k, type); return type;
+}
+const SPEED = { snow: 0.72, trail: 0.85, forest: 0.42, bank: 0.55, ice: 0.62, pier: 0.8, obsidian: 0.7, water: 0, rock: 0 };
+function solid(px, py){ return SPEED[terrain(Math.floor(px/T), Math.floor(py/T))] === 0; }
+
+// static objects, placed once, deterministic by cell
+const statics = [];
+(function build(){
+  [[-5,-4],[4,-6],[-6,3],[5,4],[0,-8],[-1,6],[8,-1],[-9,-1]].forEach(([dx,dy]) => statics.push({ k:'house', x:(VX+dx)*T, y:(VY+dy)*T, bw:13, bh:[-18,4] }));
+  statics.push({ k:'windmill', x:(RIVER+6)*T, y:(VY-16)*T, bw:6, bh:[-10,4] });
+  statics.push({ k:'lighthouse', x:(RIVER+1)*T+4, y:(VY)*T, bw:5, bh:[-8,4] });
+  statics.push({ k:'church', x:VX*T, y:(VY-14)*T, bw:14, bh:[-16,6] });
+  statics.push({ k:'shaman', x:(VX+13)*T, y:(Math.round(road(VX+13))-4)*T, bw:12, bh:[-14,5] });
+  statics.push({ k:'well', x:VX*T, y:VY*T, bw:7, bh:[-6,4] });
+  statics.push({ k:'arch', x:78*T, y:(Math.round(branchN(78))-4)*T, bw:12, bh:[-16,4] });                 // a ruined arch over nothing, on the north ridge
+  statics.push({ k:'ring', x:105*T, y:(Math.round(branchN(105))+7)*T, bw:0, bh:[0,0] });                  // a ring of small stones, off the north path
+  statics.push({ k:'watchtower', x:118*T, y:(Math.round(branchS(118))-5)*T, bw:8, bh:[-30,4] });          // a broken watchtower above the south path
+  statics.push({ k:'shrine', x:91*T, y:(Math.round(road(91))-6)*T, bw:8, bh:[-12,4] });                 // a wayside shrine on the east road, with a coal still in it
+  statics.push({ k:'cairn', x:124*T, y:(Math.round(road(124))+6)*T, bw:5, bh:[-8,3] });                   // a cairn, further on
+  statics.push({ k:'arch', x:152*T, y:(Math.round(road(152))-5)*T, bw:12, bh:[-16,4] });                  // and a second arch, nearer the tower
+  [[RIVER-9,60],[RIVER-10,88],[RIVER-8,94]].forEach(([tx,ty]) => statics.push({ k:'boat', x:tx*T, y:ty*T }));
+  for (let cx = 3; cx < WX/12; cx++) for (let cy = 1; cy < WY/12; cy++){
+    const r = hash(cx*31, cy*17), tx = cx*12 + Math.floor(hash(cx,cy)*10), ty = cy*12 + Math.floor(hash(cy,cx)*10);
+    const t = terrain(tx,ty); if (t !== 'snow' && t !== 'forest') continue;
+    if (Math.abs(ty-road(tx)) < 4 || Math.hypot(tx-VX,ty-VY) < 14) continue;
+    const x = tx*T, y = ty*T;
+    if (tx > 40 && tx < 140 && r > 0.72) statics.push({ k:'shack', x, y, bw:9, bh:[-13,5] });
+    else if (tx > 80 && tx < 176 && r > 0.45){ const kind = Math.floor(hash(cx*5, cy*9)*4);            // idol variants
+      statics.push({ k:'idol', x, y, kind, bw:4, bh:[-5,3], eye: tx > 170, depth: Math.min(1, (tx-100)/200) }); }
+    else if (tx > 100 && tx < 180 && r < 0.32){ const lvl = Math.min(4, Math.floor((tx-100)/18)); statics.push({ k:'obelisk', x, y, lvl, ring: hash(cy*3,cx*7) > 0.55 && lvl >= 1, bw: 5+lvl*2, bh:[-(6+lvl*2), 4] }); }
+  }
+  statics.push({ k:'tower', x: TOWER.tx*T, y: TOWER.ty*T, bw:30, bh:[-40,6] });
+  statics.push({ k:'cistern', x: CIST.tx*T, y: CIST.ty*T, bw:22, bh:[-10,6] });
+  statics.push({ k:'barrow', x: BARROW.tx*T, y: BARROW.ty*T, bw:24, bh:[-14,6] });
+})();
+const LH = statics.find(o => o.k === 'lighthouse');
+const SHAMAN = statics.find(o => o.k === 'shaman');
+const SHIP = { x: (RIVER-4)*T, y: 66*T+2 };
+const bones = [];
+for (let s2 = 0, n = 0; n < 60 && s2 < 8000; s2++){ const tx = 40 + Math.floor(hash(s2,313)*(WX-60)), ty = Math.floor(hash(717,s2)*WY);
+  const t = terrain(tx,ty); if (t === 'snow' || t === 'trail' || t === 'forest'){ bones.push({ x: tx*T+Math.floor(hash(s2,1)*6), y: ty*T+6, face: hash(s2,2) > 0.5 ? 1 : -1 }); n++; } }
+const beacons = [52,73,106,142,162].map(tx => { const ty = Math.round(road(tx))+3; return { x: tx*T+4, y: ty*T+4, lit: tx === 74, leg: 'east' }; });
+beacons.push({ x: 35*T+4, y: (Math.round(branchN(35))+3)*T+4, lit: false, leg: 'north', head: true });   // a fire at each trailhead, lit the moment he shows you the way
+beacons.push({ x: 41*T+4, y: (Math.round(branchS(41))+3)*T+4, lit: false, leg: 'south', head: true });
+[60, 95].forEach(tx => beacons.push({ x: tx*T+4, y: (Math.round(branchN(tx))+3)*T+4, lit: false, leg: 'north' }));
+[86, 141].forEach(tx => beacons.push({ x: tx*T+4, y: (Math.round(branchS(tx))+3)*T+4, lit: false, leg: 'south' }));
+const caches = [];
+for (let s = 0, n = 0; n < 52 && s < 9000; s++){
+  const tx = 20 + Math.floor(hash(s,77)*(WX-30)), ty = Math.floor(hash(91,s)*WY);
+  const t = terrain(tx,ty); if (!(t === 'snow' || t === 'trail' || t === 'forest') || Math.hypot(tx-VX,ty-VY) <= 12) continue;
+  const bn = branchN(tx), bs = branchS(tx), offRoad = Math.min(Math.abs(ty - road(tx)), bn === null ? 99 : Math.abs(ty - bn), bs === null ? 99 : Math.abs(ty - bs));
+  if (offRoad > 9 && hash(s, 5) > 0.25) continue;                                                     // most of it is on or near a path; a few are a short way into the trees
+  const fallen = hash(s, 13) < 0.3, pose = Math.floor(hash(s, 17)*4), face = hash(s, 19) > 0.5 ? 1 : -1;   // three in ten: someone was carrying this
+  caches.push({ x: tx*T+4, y: ty*T+4, taken: false, fallen, pose, face }); n++;
+}
+function blocked(px, py){
+  for (const o of statics){ if ((o.k === 'tower' || o.k === 'cistern' || o.k === 'barrow') && px > o.x-8 && px < o.x+8 && py > o.y-2) continue;   // doorway
+    if (px > o.x-o.bw && px < o.x+o.bw && py > o.y+o.bh[0] && py < o.y+o.bh[1]) return true; }
+  for (const b of beacons) if (Math.abs(px-b.x) < 5 && py > b.y-4 && py < b.y+4) return true;
+  return false;
+}
+
+// ---------- tower interior: landings and stairs, letters are seams that join distant places ----------
+// the labyrinth is never the same twice: carved fresh each time you go in
+const IW = 30, IH = 20, IT = 12;                                     // interior tiles are larger
+let INT = []; const seams = {}; let exitTile = null, shardTile = null;
+function carveInterior(seed){
+  let rs = seed|0; const rnd = () => { rs = (Math.imul(rs, 1664525) + 1013904223) >>> 0; return rs/4294967296; };
+  const g = Array.from({ length: IH }, () => Array(IW).fill('#'));
+  const CW = 14, CH = 9, cell = (cx, cy) => [1 + cx*2, 1 + cy*2];                                    // cells sit on the odd tiles
+  const seen = Array.from({ length: CH }, () => Array(CW).fill(false)), stack = [[0, 0]]; seen[0][0] = true; g[1][1] = '.';
+  while (stack.length){ const [cx, cy] = stack[stack.length-1]; const opts = [[1,0],[-1,0],[0,1],[0,-1]].filter(([dx,dy]) => cx+dx >= 0 && cx+dx < CW && cy+dy >= 0 && cy+dy < CH && !seen[cy+dy][cx+dx]);
+    if (!opts.length){ stack.pop(); continue; } const [dx, dy] = opts[rnd()*opts.length|0], [nx, ny] = cell(cx+dx, cy+dy), [ox, oy] = cell(cx, cy);
+    g[oy+dy][ox+dx] = '.'; g[ny][nx] = '.'; seen[cy+dy][cx+dx] = true; stack.push([cx+dx, cy+dy]); }
+  for (let i = 0; i < 10; i++){ const x = 2 + (rnd()*(IW-4)|0), y = 2 + (rnd()*(IH-4)|0); if (g[y][x] === '#' && ((g[y][x-1] === '.' && g[y][x+1] === '.') || (g[y-1][x] === '.' && g[y+1][x] === '.'))) g[y][x] = '.'; }   // a few loops so it is not a tree
+  for (let i = 0; i < 3; i++){ const [rx, ry] = cell(1 + (rnd()*(CW-2)|0), 1 + (rnd()*(CH-2)|0)); for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) g[ry+dy][rx+dx] = '.'; }   // three open rooms
+  // the door is on the bottom edge; the sealed room is the farthest place from it
+  const ex = 1 + 2*(rnd()*CW|0); g[IH-1][ex] = 'X'; g[IH-2][ex] = '.';                                                    // the door itself is a tile you walk back onto to leave
+  const dist = Array.from({ length: IH }, () => Array(IW).fill(-1)); const q = [[ex, IH-2]]; dist[IH-2][ex] = 0; let far = [ex, IH-2];
+  while (q.length){ const [x, y] = q.shift(); for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const nx = x+dx, ny = y+dy; if (nx < 0 || ny < 0 || nx >= IW || ny >= IH || g[ny][nx] === '#' || dist[ny][nx] >= 0) continue; dist[ny][nx] = dist[y][x]+1; if (dist[ny][nx] > dist[far[1]][far[0]]) far = [nx, ny]; q.push([nx, ny]); } }
+  g[far[1]][far[0]] = 'O';
+  const floor = []; for (let y = 1; y < IH-1; y++) for (let x = 1; x < IW-1; x++) if (g[y][x] === '.') floor.push([x, y]);
+  const ends = floor.filter(([x, y]) => [[1,0],[-1,0],[0,1],[0,-1]].filter(([dx,dy]) => g[y+dy][x+dx] !== '#').length === 1 && Math.abs(x-ex) + Math.abs(y-(IH-2)) > 3);   // dead ends: where the seams go
+  for (let k = 0; k < 5 && ends.length >= 2; k++){ const L = 'abcde'[k]; for (let j = 0; j < 2; j++){ const i = rnd()*ends.length|0; const [x, y] = ends.splice(i, 1)[0]; g[y][x] = L; } }
+  for (let i = 0; i < 12; i++){ const [x, y] = floor[rnd()*floor.length|0]; if (g[y][x] === '.') g[y][x] = 'S'; }      // stairs that slow you
+  if (typeof inside !== 'undefined' && inside.site === 'cistern') for (let i = 0; i < 40; i++){ const [x, y] = floor[rnd()*floor.length|0]; if (g[y][x] === '.' && dist[y][x] > 4) g[y][x] = 'W'; }   // the cistern: standing water, cold and slow
+  INT = g.map(r => r.join('')); for (const k in seams) delete seams[k]; exitTile = null; shardTile = null;
+  INT.forEach((row, y) => [...row].forEach((c, x) => { if (/[a-e]/.test(c)) (seams[c] = seams[c] || []).push([x,y]); if (c === 'X') exitTile = [x,y]; if (c === 'O') shardTile = [x,y]; })); }
+const inside = { on: false, x: 0, y: 0, cool: 0, left: false, site: 'tower' };
+carveInterior(12345);
+function itile(px, py){ const x = Math.floor(px/IT), y = Math.floor(py/IT); return (x < 0 || y < 0 || x >= IW || y >= IH) ? '#' : INT[y][x]; }
+function enterTower(site = 'tower'){ inside.site = site; if (!player.relic) carveInterior((Math.random()*1e9)|0); inside.on = true; inside.x = exitTile[0]*IT+6; inside.y = exitTile[1]*IT+6; inside.left = false; inside.cool = 30; say(site === 'tower' ? 'Inside, the stairs do not agree with each other.' : site === 'cistern' ? 'Cold water on the floor. The runes still work under it.' : 'The barrow. Your lantern is the only thing here that is not stone.', 300); }
+function leaveTower(){ inside.on = false; const st = SITES[inside.site]; player.y = st.ty*T+8; player.x = st.tx*T;
+  if (player.shard){ burden.x = player.x - 6; burden.y = player.y + 4; burden.trail.length = 0; }
+  if (player.relic === 'bell'){ audio.resonate(!player.moving); player.stillT = player.moving ? 0 : (player.stillT || 0) + 1; }
+  if (player.shard && !world.after){ world.after = true; wolves.length = 0; say('The obelisk is hot. The wolves are bones. Take it to the old man.', 480); }
+  if (player.relic === 'lens' && !world.frozen){ world.frozen = true; say('The lens takes your lantern\'s light and bends it. The river goes white to the far bank, and something crosses it.', 480); }
+  if (player.relic === 'bell' && !world.silent){ world.silent = true; say('It hums. Everything else stops to listen. Keep moving.', 400); } }
+
+// ---------- entities ----------
+const player = { x: VX*T, y: (VY+3)*T, oil: 100, stam: 100, stamMax: 100, bite: 0, surge: 0, relic: null, rise: 0, winded: false, face: 1, step: 0, lit: true, moving: false, shard: false, entered: false };
+const world = { mushroom: false, after: false, ended: false, lhLit: true, ship: true, relics: [false, false, false], endT: 0, met: false, map: false, frozen: false, silent: false };
+const RELIC_COUNT = 3;
+const RELIC_NAME = ['obelisk', 'lens', 'bell'];
+const burden = { x: 0, y: 0, taut: false, trail: [] };
+const ptrail = [];   // where the player has been: the chain can always follow his own footprints
+const prints = [];   // and the footprints themselves, in the snow, fading
+const fire = new Map();                                              // 'tx,ty' -> frame the tree caught
+function ignite(tx, ty){ if (terrain(tx, ty) === 'forest' && !fire.has(tx+','+ty)) fire.set(tx+','+ty, frame); }
+const CHAIN = 14;
+const hollows = [];
+const others = [];   // the things past the wolves
+// close-ups: the game steps in to arm's length. same ink, same dither, but now it is your hands.
+const closeup = { on: false, lines: [], kind: null, beacon: null, step: 0, hatch: 0, turn: 0, oil: 0, flame: 0, lastA: null, dials: [0,0,0], target: [0,0,0], done: 0, hold: 0 };
+function openCloseup(kind, beacon){ jo = null; jx = jy = 0; joy.style.display = 'none'; closeup.on = true; closeup.kind = kind; closeup.beacon = beacon; closeup.step = 0; closeup.hatch = 0; closeup.turn = 0; closeup.oil = 0; closeup.flame = 0; closeup.lastA = null; closeup.done = 0; closeup.hold = 0;
+  if (kind === 'beacon') say(player.lit ? 'The chamber is cold. Open it.' : 'Dark. Tap your lantern to light it, or the strip below to step back.', 260);
+  if (kind === 'well'){ closeup.turn = 0; closeup.lastA = null; closeup.step = 0; say('The village well. Something is caught on the rope. Wind it up.', 300); }
+  if (kind === 'lens'){ closeup.panels = [0,1,2,3,4].map(() => Math.random()*4|0); closeup.want = [0,1,2,3,4].map(() => Math.random()*4|0); closeup.want.forEach((w, i) => { if (closeup.panels[i] === w) closeup.panels[i] = (w+1)%4; });   // five mirrors, all wrong to begin with
+    say('A lamp at the wall. Five panels of glass. Turn them until the light reaches the core.', 320); }
+  if (kind === 'bell'){ closeup.target = audio.melody(); closeup.guess = []; closeup.step = 0; closeup.hold = 0; say('Five stones, each with a note in it. The box hums the old man\'s song. Play it back.', 320); }
+  if (kind === 'obelisk'){ closeup.dials = [0,0,0,0]; closeup.target = [0,0,0,0]; const taps = 4 + (Math.random()*5|0); for (let t = 0; t < taps; t++) turnStone(closeup.target, Math.random()*4|0); if (closeup.target.every(v => v === 0)) turnStone(closeup.target, 1);   // the answer is reachable, because it was made by turning
+    say('A stone trunk, locked. Four stones below it; each one turns the one beside it. The marks on the wall know the order.', 320); } }
+function turnStone(d, i){ d[i] = (d[i]+1)%5; if (i+1 < d.length) d[i+1] = (d[i+1]+1)%5; }                              // a stone drags its right-hand neighbour one mark with it
+function closeupGeom(){ const cx = W/2; return { cx, chamber: { x: cx - W*0.22, y: H*0.22, w: W*0.44, h: H*0.34 }, wheel: { x: cx - W*0.34, y: H*0.62, r: W*0.1 }, wick: { x: cx, y: H*0.33 }, lamp: { x: W*0.8, y: H*0.8 },
+  dials: [0,1,2,3].map(i => ({ x: cx + (i-1.5)*W*0.22, y: H*0.74, r: W*0.075 })), trunk: { x: cx - W*0.3, y: H*0.24, w: W*0.6, h: H*0.34 },
+  source: { x: W*0.08, y: H*0.62 }, core: { x: cx, y: H*0.2 }, panels: [[W*0.3, H*0.68], [W*0.62, H*0.58], [W*0.24, H*0.46], [W*0.72, H*0.36], [W*0.34, H*0.3]].map(([x,y]) => ({ x, y })),
+  stones: [0,1,2,3,4].map(i => ({ x: cx + (i-2)*W*0.18, y: H*0.74 })), box: { x: cx - W*0.28, y: H*0.22, w: W*0.56, h: H*0.32 }, ring: { x: cx, y: H*0.42, r: W*0.22 }, bells: [0,1,2].map(i => ({ x: cx + (i-1)*W*0.27, y: H*0.5 })), sockets: [0,1,2].map(i => ({ x: cx + (i-1)*W*0.22, y: H*0.62 })), pillar: { x: cx, y: H*0.16, w: W*0.16, h: H*0.42 } }; }
+function closeupPoint(e){ const r = stage.getBoundingClientRect(); return [ (e.clientX - r.left)/r.width*W, (e.clientY - r.top)/r.height*H ]; }
+function closeupDown(e){ const [px, py] = closeupPoint(e), g = closeupGeom(), c = closeup;
+  if (Math.hypot(px-g.lamp.x, py-(g.lamp.y-10)) < W*0.11){ if (!player.lit && player.oil <= 0){ say('No oil.', 90); return; } toggleLamp(); return; }   // your lantern, tap to light or put out
+  if (c.kind === 'map'){ c.on = false; return; }
+  if (py > H*0.86 && c.kind === 'well'){ c.on = false; closeup.wellBacked = frame; say('You leave it.', 90); return; }
+  if (py > H*0.86 && c.kind !== 'talk' && !(c.kind === 'altar' && c.done > 0)){ c.on = false; if (c.beacon) c.beacon.backed = frame; if (c.kind === 'obelisk') closeup.obBacked = frame; say(c.kind === 'beacon' ? 'You step back.' : 'You leave it.', 90); return; }
+  if (c.kind === 'beacon'){
+    if (c.step === 0 && px > g.chamber.x && px < g.chamber.x+g.chamber.w && py > g.chamber.y && py < g.chamber.y+g.chamber.h){ c.step = 1; audio.slide(); say('The capstone grinds aside. Turn the wheel until the hollow fills.', 240); return; }
+    if (c.step === 1 && Math.hypot(px-g.wheel.x, py-g.wheel.y) < g.wheel.r*1.6){ c.lastA = Math.atan2(py-g.wheel.y, px-g.wheel.x); return; }
+    if (c.step === 2 && px > g.chamber.x - 6 && px < g.chamber.x + g.chamber.w + 6 && py > g.chamber.y - 6 && py < g.chamber.y + g.chamber.h + 6){ if (!player.lit){ say('Your lantern is out. Tap it, bottom right.', 160); return; } c.hold = 1; say('It catches.', 90); return; }   // one tap anywhere on the stove
+    if (c.step === 2 && frame % 90 === 0) say('Touch your lantern to the wick. Tap the stove.', 150); }
+  if (c.kind === 'talk'){ if (c.lines.length){ audio.grunt(); say(c.lines.shift(), 9999); } else { c.on = false; say('He picks up the drum again.', 200); } return; }
+  if (c.kind === 'altar' && c.done > 0 && c.lines && c.lines.length){ audio.grunt(); say(c.lines.shift(), 9999); return; }
+  if (c.kind === 'altar' && c.done > 0 && c.lines && !c.lines.length && world.relics.filter(Boolean).length < RELIC_COUNT){ c.on = false; say('He picks up the drum again.', 200); return; }
+  if (c.kind === 'altar' && c.done === 0){ const i = RELIC_NAME.indexOf(player.relic), sk = g.sockets[i]; if (i >= 0 && Math.hypot(px-sk.x, py-sk.y) < W*0.12){ c.done = 1; c.socket = i; world.relics[i] = true;
+      player.shard = false; player.relic = null; world.frozen = false; world.silent = false; audio.resonateOff(); const n = world.relics.filter(Boolean).length;
+      if (n < RELIC_COUNT){ if (!world.map){ world.map = true; mapKnown = true; terrainCache.clear(); beacons.forEach(b => { if (b.head) b.lit = true; }); c.lines = ['He sets it in the stone. Then he unrolls a hide: a river, a road, three marks.',
+          'The Watchers cut this stone to hold their names. They lost the names. That is why they burn around it.',
+          'North: the path leaves behind the church and runs the ridge to a cistern. A lighthouse lens, drowned. It will bend your lantern\'s light into shapes.',
+          'South: the path leaves from the bottom of the village and goes down through the deep woods to a barrow. A stone that hums. When it hums, they come. Do not stand still with it.',
+          'As he unrolls it, two fires catch at the edges of the village: one to the north, one to the south. Beacons stand along both paths. Light them. Tap the map when you forget.']; }
+        else c.lines = world.relics[1] ? ['He sets it in the stone. Two of three.', 'The lens sees the Watchers as they are, and it will not let light lie flat near it. So the river went white, and so your lantern went strange.', 'One more. You know where.']
+                     : ['He sets it in the stone. Two of three.', 'The hum has no edges. It is the one thing the Watchers cannot wear. They hate it, and they come to it.', 'One more. You know where.']; say(c.lines.shift(), 9999); }
+      else say('He sets the last one in the stone. Mirror to hold their names. Lens to see them. Voice to say it. He begins.', 500); } return; }
+  if (c.kind === 'well'){ if (c.step === 0 && Math.hypot(px-g.wheel.x, py-g.wheel.y) < g.wheel.r*1.6){ c.lastA = Math.atan2(py-g.wheel.y, px-g.wheel.x); return; }
+    if (c.step === 1 && Math.hypot(px-g.cx, py-H*0.38) < W*0.14){ c.step = 2; c.done = 1; world.mushroom = true; audio.eat(); say('A mushroom, pale, grown in the dark of the well. You eat it. Something in your legs is different now.', 500); } return; }
+  if (c.kind === 'lens' && c.done === 0){ g.panels.forEach((pn, i) => { if (Math.hypot(px-pn.x, py-pn.y) < W*0.09){ c.panels[i] = (c.panels[i]+1)%4; audio.clank(); } });
+    if (c.panels.every((v, i) => v === c.want[i])){ c.done = 1; audio.ignite(); say('The light reaches the core. The lens comes free of the water.', 320); } return; }
+  if (c.kind === 'bell' && c.done === 0 && c.step === 2){ g.stones.forEach((bl, i) => { if (Math.hypot(px-bl.x, py-bl.y) < W*0.085){ audio.tone(i); c.guess.push(i); c.hold = 1;
+      if (c.guess[c.guess.length-1] !== c.target[c.guess.length-1]){ c.guess = []; c.step = 0; c.hold = 0; say('Wrong. It shows you again.', 200); }
+      else if (c.guess.length === c.target.length){ c.done = 1; audio.slide(); say('The box hears its song. It slides open.', 300); } } }); return; }
+  if (c.kind === 'obelisk' && c.done === 0){ g.dials.forEach((d, i) => { if (Math.hypot(px-d.x, py-d.y) < d.r*1.4){ turnStone(c.dials, i); audio.clank(); } });
+    if (c.dials.every((v,i) => v === c.target[i])){ c.done = 1; say('The stones agree. The chains let go.', 300); } } }
+function closeupMove(e){ const c = closeup; if (!c.on || c.lastA === null) return; const [px, py] = closeupPoint(e), g = closeupGeom();
+  if (c.kind === 'well' && c.step === 0){ const a = Math.atan2(py-g.wheel.y, px-g.wheel.x); let da = a - c.lastA; if (da > Math.PI) da -= 2*Math.PI; if (da < -Math.PI) da += 2*Math.PI; c.lastA = a;
+    if (da > 0){ const before = Math.floor(c.turn/(Math.PI/6)); c.turn += da; audio.grind(da); if (Math.floor(c.turn/(Math.PI/6)) !== before) audio.clank(); if (c.turn > Math.PI*4 && c.step === 0){ c.step = 1; say('The bucket comes up. There is something in it.', 240); } } return; }
+  if (c.kind !== 'beacon' || c.step !== 1) return;
+  const a = Math.atan2(py-g.wheel.y, px-g.wheel.x); let da = a - c.lastA; if (da > Math.PI) da -= 2*Math.PI; if (da < -Math.PI) da += 2*Math.PI; c.lastA = a;
+  if (da > 0){ const before = Math.floor(c.turn/(Math.PI/6)); c.turn += da; c.oil = Math.min(1, c.turn/(Math.PI*2.5)); audio.grind(da); if (Math.floor(c.turn/(Math.PI/6)) !== before) audio.clank(); if (c.oil >= 1 && c.step === 1){ c.step = 2; say('Full. Touch the lantern to the wick.', 240); } } }
+function closeupUp(){ closeup.lastA = null; }
+function updateCloseup(){ const c = closeup;
+  if (c.kind === 'beacon'){ if (c.step >= 1 && c.hatch < 1) c.hatch = Math.min(1, c.hatch + 0.05);
+    if (c.step === 2 && c.hold > 0){ c.hold++; if (c.hold > 30){ c.step = 3; audio.ignite(); c.flame = 1; player.oil -= 25; c.beacon.lit = true; const n = beacons.filter(x=>x.lit).length; say(`It takes. ${n} of ${beacons.length}.`, 240); } }
+    if (c.step === 3){ c.flame = Math.min(1, c.flame + 0.02); c.done++; if (c.done > 110) c.on = false; } }
+  if (c.kind === 'altar' && c.done > 0){ c.done++; const n = world.relics.filter(Boolean).length; if (n >= RELIC_COUNT && c.done === 2) say('Three. He does not say anything. He begins.', 300);
+    if (n < RELIC_COUNT){ if (c.done > 120 && !(c.lines && c.lines.length)) { /* waits for the tap that closes it */ } return; }
+    if (c.done === 200) say('An upright. A bar across it. A short one above. A slanted one at the foot.', 400);
+    if (c.done === 470) say('The light stands up.', 9999);
+    if (c.done === 3) audio.assemble(); if (c.done === 720) audio.pure(true);
+    if (c.done > 760){ c.on = false; world.ended = true; world.endT = frame; } }
+  if (c.kind === 'well' && c.done > 0){ c.done++; if (c.done > 140) c.on = false; }
+  if (c.kind === 'bell' && c.done === 0){ if (c.step === 0){ c.hold++; if (c.hold > 40){ c.step = 1; c.hold = 0; c.show = 0; } }                  // a pause, then it shows you
+    if (c.step === 1){ c.hold++; if (c.hold % 40 === 1){ if (c.show < c.target.length){ audio.tone(c.target[c.show]); c.flash = [c.target[c.show], frame]; c.show++; } else { c.step = 2; c.hold = 0; say('Now you.', 120); } } } }
+  if (c.kind === 'obelisk' && c.done > 0){ c.done++; if (c.done > 150){ c.on = false; player.shard = true; player.relic = 'obelisk'; say('You lift the mirror out of the trunk. It is heavier than it looks, and getting heavier.', 400); } }
+  if ((c.kind === 'lens' || c.kind === 'bell') && c.done > 0){ c.done++; if (c.done > 130){ c.on = false; player.relic = c.kind; say(c.kind === 'lens' ? 'You lift the lens. Your lantern\'s light goes strange around it.' : 'You lift the resonator. It hums when it is still, and they will hear it. Keep moving.', 400); } } }
+function glyph(x, y, k, sz){ const u = sz/4; sctx.fillRect(x-u/2, y-sz/2, u, sz);                                     // four marks, one stroke each family
+  if (k === 0){ sctx.fillRect(x-sz/2, y-u/2, sz, u); } if (k === 1){ sctx.fillRect(x-sz/2, y-sz/2, sz, u); sctx.fillRect(x-sz/2, y+sz/2-u, sz, u); }
+  if (k === 2){ sctx.fillRect(x, y-sz/2, sz/2, u); sctx.fillRect(x-sz/2, y+sz/2-u, sz/2, u); } if (k === 3){ sctx.fillRect(x-sz/2, y-u/2, sz/2, u); sctx.fillRect(x-sz/2, y-sz/2, u, sz); }
+  if (k === 4){ sctx.fillRect(x-sz/2, y-sz/2, sz, u); sctx.fillRect(x, y-u/2, sz/2, u); sctx.fillRect(x+sz/2-u, y-u/2, u, sz/2); } }   // a fifth mark
+function drawCloseup(){ const c = closeup, g = closeupGeom(); sctx.fillStyle = tone(0.16); sctx.fillRect(0,0,W,H);
+  for (let i = 0; i < 400; i++){ const hx = hash(i, 1)*W, hy = hash(1, i)*H; sctx.fillStyle = tone(0.1 + hash(i,i)*0.12); sctx.fillRect(hx|0, hy|0, 1 + (hash(i,3)>0.8?1:0), 1); }   // the dark around you
+  sctx.fillStyle = tone(0.06); sctx.fillRect(0, H*0.86, W, H*0.14);   // the ground at your feet; step back is anywhere down here
+  if (c.kind === 'beacon'){ const ch = g.chamber, px = (x, y, w, h, v) => { sctx.fillStyle = tone(v); sctx.fillRect(Math.round(x), Math.round(y), Math.ceil(w), Math.ceil(h)); };
+    // the beacon head: a cairn of old stone with a hollow in it. a capstone you slide, a stone wheel that lets the oil down from an urn, a wick standing in the hollow
+    const col = { x: ch.x + ch.w*0.22, y: ch.y + ch.h, w: ch.w*0.56, h: H*0.86 - ch.y - ch.h };
+    for (let y = 0, k = 0; y < col.h; k++){ const rh = 7 + (hash(k, 3)*5|0); let x = 0; for (let m = 0; x < col.w; m++){ const rw = 10 + (hash(k, m*7)*14|0), w = Math.min(rw, col.w - x), v = 0.3 + hash(m, k)*0.14;   // stacked stones, no two alike
+        px(col.x + x, col.y + y, w, rh, v); px(col.x + x, col.y + y, w, 1, v + 0.12); px(col.x + x, col.y + y + rh - 1, w, 1, 0.12); px(col.x + x + w - 1, col.y + y, 1, rh, 0.14); x += w + 1; } y += rh + 1; }
+    for (let i = 0; i < 12; i++) px(col.x + hash(i, 9)*col.w, col.y + hash(9, i)*col.h, 2, 1, 0.55);                                                    // lichen
+    for (let y = 0, k = 0; y < ch.h + 10; k++){ const rh = 8 + (hash(k+40, 3)*5|0); let x = 0; for (let m = 0; x < ch.w + 20; m++){ const rw = 12 + (hash(k+40, m*7)*16|0), w = Math.min(rw, ch.w + 20 - x), v = 0.34 + hash(m, k+40)*0.14;
+        px(ch.x - 10 + x, ch.y - 6 + y, w, rh, v); px(ch.x - 10 + x, ch.y - 6 + y, w, 1, v + 0.12); px(ch.x - 10 + x, ch.y - 6 + y + rh - 1, w, 1, 0.12); px(ch.x - 10 + x + w - 1, ch.y - 6 + y, 1, rh, 0.14); x += w + 1; } y += rh + 1; }   // the head, wider, older
+    const inner = { x: ch.x + ch.w*0.18, y: ch.y + ch.h*0.16, w: ch.w*0.64, h: ch.h*0.7 };
+    px(inner.x - 3, inner.y - 3, inner.w + 6, inner.h + 6, 0.12); px(inner.x, inner.y, inner.w, inner.h, 0.03);                                            // the hollow, cut into the stone
+    for (let i = 0; i < 5; i++){ const rx = inner.x - 3 + (i%2 ? inner.w + 4 : -6), ry = inner.y + 6 + i*(inner.h/5); px(rx, ry, 1, 5, 0.6); px(rx-1, ry+2, 3, 1, 0.6); if (i%2) px(rx, ry, 2, 1, 0.6); else px(rx-1, ry+4, 2, 1, 0.6); }   // runes down both sides
+    const oilTop = inner.y + inner.h - inner.h*0.7*c.oil - 2, wickTop = inner.y + inner.h*0.2, flameBase = wickTop;
+    if (c.oil > 0){ px(inner.x + 2, oilTop, inner.w - 4, inner.y + inner.h - oilTop - 2, 0.3); px(inner.x + 2, oilTop, inner.w - 4, 1, 0.6); for (let i = 0; i < 5; i++) px(inner.x + 6 + ((i*23 + (frame>>2)) % (inner.w - 12)), oilTop + 3 + i*4, 3, 1, 0.38); }
+    for (let y = wickTop + 3; y < inner.y + inner.h - 4; y += 1){ const under = c.oil > 0 && y > oilTop;
+      if (!under){ px(g.wick.x - 2, y, 5, 1, 0.16); px(g.wick.x - 1, y, 1, 1, 0.3); }
+      else if (((y + (frame >> 3)) % 3) !== 0) px(g.wick.x - 2 + (((y*7 + (frame >> 4)) >> 1) % 2), y, 4, 1, 0.25); }
+    px(g.wick.x - 3, wickTop + 2, 7, 2, 0.5); px(g.wick.x - 1, wickTop, 3, 2, 0.7);                                                                       // a stone collar, the frayed tip
+    if (c.flame > 0){ const fh = Math.min(flameBase - inner.y - 4, (flameBase - inner.y)*0.9*c.flame), maxW = inner.w*0.22; sctx.fillStyle = EM;
+      for (let i = 0; i < fh; i += 2){ const t = i/fh, w = Math.max(2, maxW*Math.pow(1 - t, 0.75)*(0.75 + 0.25*Math.sin(frame*0.35 + t*9))), xo = Math.sin(frame*0.19 + t*7)*4*t + Math.sin(frame*0.07)*1.5;
+        sctx.fillRect(Math.round(g.wick.x + xo - w/2), Math.round(flameBase - i), Math.round(w), 2); }
+      for (let k = 0; k < 4; k++){ const life = (frame*1.3 + k*37) % 70, sx = g.wick.x + Math.sin(k*2.1 + frame*0.05)*inner.w*0.18, sy = flameBase - fh*0.5 - life*1.1; if (sy > inner.y + 2 && life < 55) sctx.fillRect(Math.round(sx), Math.round(sy), 2, 2); } }
+    if (c.hold > 0 && c.step === 2){ sctx.fillStyle = EM; const k = Math.min(1, c.hold/30); sctx.fillRect(g.wick.x-1-Math.round(k*3), flameBase - 3 - Math.round(k*6) + (frame%3), 3 + Math.round(k*6), 3 + Math.round(k*6)); }
+    if (c.step === 2 && c.hold === 0 && frame % 50 < 30){ sctx.fillStyle = tone(0.85); for (let a = 0; a < 6.3; a += 0.45) sctx.fillRect(g.wick.x + Math.cos(a)*14|0, wickTop + Math.sin(a)*10|0, 1, 1); }
+    const cw = inner.w * (1 - c.hatch*0.95);                                                                                                                // the capstone, slid aside
+    if (cw > 1){ px(inner.x - 4, inner.y - 4, cw + 8, inner.h + 8, 0.44); px(inner.x - 4, inner.y - 4, cw + 8, 2, 0.6); px(inner.x - 4, inner.y + inner.h + 2, cw + 8, 2, 0.16); for (let i = 0; i < 4; i++) px(inner.x + hash(i,5)*cw, inner.y + hash(5,i)*inner.h, 3, 1, 0.3);
+      if (c.step === 0 && frame % 40 < 20){ px(inner.x + cw/2 - 8, inner.y + inner.h/2 - 1, 16, 2, 0.85); px(inner.x + cw/2 + 6, inner.y + inner.h/2 - 4, 2, 8, 0.85); } }
+    const wh = g.wheel; px(wh.x - 4, wh.y, 8, H*0.86 - wh.y, 0.26); px(wh.x - 4, wh.y, 2, H*0.86 - wh.y, 0.4);                                              // a stone post
+    for (let a = 0; a < Math.PI*2; a += 0.03){ px(wh.x + Math.cos(a)*wh.r, wh.y + Math.sin(a)*wh.r, 3, 3, 0.5); px(wh.x + Math.cos(a)*wh.r*0.85, wh.y + Math.sin(a)*wh.r*0.85, 2, 2, 0.34); }   // a stone wheel, like a millstone
+    for (let k = 0; k < 4; k++){ const a = c.turn + k*Math.PI/2; for (let r = 0; r < wh.r*0.8; r += 2) px(wh.x + Math.cos(a)*r, wh.y + Math.sin(a)*r, 3, 3, 0.62); }   // the cross cut in it turns with you
+    for (let k = 0; k < 12; k++){ const a = c.turn + k*Math.PI/6; px(wh.x + Math.cos(a)*wh.r*1.02, wh.y + Math.sin(a)*wh.r*1.02, 3, 3, k === 0 ? 0.95 : 0.12); }              // notches round the rim, and one pale peg you can follow
+    { const a = c.turn; px(wh.x + Math.cos(a)*wh.r*0.55 - 2, wh.y + Math.sin(a)*wh.r*0.55 - 2, 5, 5, 0.85); }                                                            // a handle stone, off centre
+    for (let k = 0; k < 12; k++){ const a = c.turn + k*Math.PI/6; px(wh.x + Math.cos(a)*wh.r*0.95 - 1, wh.y + Math.sin(a)*wh.r*0.95 - 1, 3, 3, 0.74); }                   // twelve notches round the rim, so the turn is unmistakable
+    { const a = c.turn; px(wh.x + Math.cos(a)*wh.r*0.6 - 2, wh.y + Math.sin(a)*wh.r*0.6 - 2, 5, 5, 0.82); px(wh.x + Math.cos(a)*wh.r*0.6 - 1, wh.y + Math.sin(a)*wh.r*0.6 - 1, 3, 3, 0.95); }   // one pale stone set in it: the hand you follow
+    px(wh.x - 3, wh.y - 3, 6, 6, 0.06);
+    if (c.step === 1 && frame % 40 < 20){ px(wh.x + wh.r*1.4, wh.y - 1, 6, 2, 0.8); px(wh.x + wh.r*1.4 + 4, wh.y - 3, 2, 6, 0.8); }                   // a hint: this way
+    const ux = wh.x + wh.r + 14, uy = wh.y - 26; px(ux, uy, 16, 22, 0.3); px(ux + 3, uy - 5, 10, 5, 0.3); px(ux + 5, uy - 8, 6, 3, 0.36); px(ux, uy, 2, 22, 0.44); px(ux, uy + 20, 16, 2, 0.12);   // the urn the oil comes down from
+    px(ux + 4, uy + 4, 8, 1, 0.5); px(ux + 4, uy + 8, 8, 1, 0.5); if (c.step === 1 && (frame>>2)%2) px(ux + 7, uy + 22, 2, ch.y + ch.h - uy - 22, 0.36);   // its bands; and when you turn, it pours
+  }
+  if (c.kind === 'well'){ const wx = g.cx, top = H*0.3, bot = H*0.86, wh = g.wheel, up = Math.min(1, c.turn/(Math.PI*4)), px = (x, y, w, h, v) => { sctx.fillStyle = tone(v); sctx.fillRect(Math.round(x), Math.round(y), Math.ceil(w), Math.ceil(h)); };
+    // an old well: cobbles laid in rings, moss in the joints, a timber frame gone grey
+    for (let y = top, k = 0; y < bot; k++){ const rh = 6 + (hash(k, 11)*4|0); for (const side of [-1, 1]){ let x = 0; for (let m = 0; x < W*0.09; m++){ const rw = 5 + (hash(k*3, m + (side+1)*40)*7|0), w = Math.min(rw, W*0.09 - x), v = 0.3 + hash(m, k*5)*0.16;
+        const sx = side < 0 ? wx - W*0.14 - x - w : wx + W*0.14 + x; px(sx, y, w, rh, v); px(sx, y, w, 1, v + 0.1); px(sx, y + rh - 1, w, 1, 0.14); if (hash(k, m*13) > 0.6) px(sx + 1, y + rh - 2, w - 2, 1, 0.24);   // moss in the joint
+        x += w + 1; } } y += rh + 1; }
+    px(wx - W*0.14, top + 6, W*0.28, bot - top - 6, 0.04);                                                                                                                       // the throat
+    for (let i = 0; i < 14; i++) px(wx - W*0.14 + hash(i, 2)*W*0.28, top + 8 + hash(2, i)*(bot - top - 10), 2 + (i%2), 1, 0.12);                                                  // wet stone catching a little light
+    for (let x = 0, m = 0; x < W*0.5; m++){ const rw = 8 + (hash(m, 77)*10|0), w = Math.min(rw, W*0.5 - x), v = 0.36 + hash(77, m)*0.14; px(wx - W*0.25 + x, top - 6, w, 10, v); px(wx - W*0.25 + x, top - 6, w, 1, 0.66); if (hash(m, 5) > 0.5) px(wx - W*0.25 + x + 1, top + 2, w - 2, 1, 0.26); x += w + 1; }   // the rim, capstones
+    for (let i = 0; i < 10; i++) px(wx - W*0.25 + hash(i, 33)*W*0.5, top - 8 + hash(33, i)*3, 2, 1, 0.3);                                                                          // moss over the lip
+    px(wx - W*0.27, top - H*0.2, 5, H*0.2, 0.22); px(wx + W*0.27 - 5, top - H*0.2, 5, H*0.2, 0.22); px(wx - W*0.27, top - H*0.2, W*0.54, 5, 0.22); px(wx - W*0.27, top - H*0.2, 1, H*0.2, 0.34); px(wx - W*0.27, top - H*0.2, W*0.54, 1, 0.34);   // the frame, grey timber
+    for (let i = 0; i < 6; i++) px(wx - W*0.27 + 1, top - H*0.2 + 8 + i*12, 3, 1, 0.12);                                                                                          // its grain
+    const by = (bot - 20)*(1 - up) + (top + 6)*up; px(wx, top - H*0.2 + 5, 1, by - (top - H*0.2 + 5), 0.55);                                                                     // the rope
+    px(wx - 12, by, 24, 16, 0.3); px(wx - 12, by, 24, 2, 0.5); px(wx - 12, by + 14, 24, 2, 0.12); px(wx - 12, by + 5, 24, 1, 0.2); px(wx - 12, by + 10, 24, 1, 0.2);            // the bucket, banded
+    if (!world.mushroom){ if (c.step === 0){ px(wx - 5, by - 3, 10, 3, 0.62); px(wx - 3, by - 5, 6, 2, 0.62); }                                                                  // something pale peeking over the bucket's lip
+      else { const cw = 17, ch = 9;                                                                                                                                              // the mushroom, with light on it from the upper left
+        for (let yy = 0; yy < ch; yy++){ const k = yy/ch, hw = Math.round(cw*Math.sqrt(1 - Math.pow(1 - k, 2)));                                                                  // the cap: a dome, row by row
+          for (let xx = -hw; xx <= hw; xx++){ const nx = xx/cw, ny = 1 - k, lit = -nx*0.7 + ny*0.7, v = lit > 0.55 ? 0.95 : lit > 0.2 ? 0.84 : lit > -0.2 ? 0.7 : 0.52; px(wx + xx, by - 14 + yy, 1, 1, v); } }
+        px(wx - cw, by - 5, 2*cw + 1, 2, 0.28); for (let xx = -cw + 2; xx < cw; xx += 3) px(wx + xx, by - 5, 1, 2, 0.16);                                                          // the gills, in shadow under the rim
+        for (let yy = 0; yy < 6; yy++){ px(wx - 4, by - 4 + yy, 8, 1, 0.66); px(wx - 4, by - 4 + yy, 2, 1, 0.8); px(wx + 2, by - 4 + yy, 2, 1, 0.48); }                              // the stem: lit edge, shaded edge
+        px(wx - 4, by + 1, 8, 1, 0.34);
+        sctx.fillStyle = EM; sctx.fillRect(wx - 9, by - 11, 2, 2); sctx.fillRect(wx + 4, by - 13, 2, 1); sctx.fillRect(wx - 2, by - 8, 1, 1); sctx.fillRect(wx + 8, by - 8, 1, 2); sctx.fillRect(wx - 13, by - 7, 1, 1);   // gold flecks on the cap
+        if (frame % 50 < 30){ px(wx - 22, by - 6, 1, 1, 0.8); px(wx + 21, by - 6, 1, 1, 0.8); px(wx, by - 24, 1, 1, 0.8); px(wx, by + 4, 1, 1, 0.8); } } }
+    px(wh.x - 3, wh.y, 6, bot - wh.y, 0.22); px(wh.x - 3, wh.y, 1, bot - wh.y, 0.34);                                                                                             // the winch post
+    for (let a = 0; a < Math.PI*2; a += 0.04) px(wh.x + Math.cos(a)*wh.r, wh.y + Math.sin(a)*wh.r, 3, 3, 0.5);
+    for (let k = 0; k < 4; k++){ const a = c.turn + k*Math.PI/2; for (let r = 3; r < wh.r; r += 2) px(wh.x + Math.cos(a)*r, wh.y + Math.sin(a)*r, 2, 2, 0.45); }
+    if (c.step === 0 && frame % 40 < 20){ px(wh.x + wh.r*1.4, wh.y - 1, 6, 2, 0.8); px(wh.x + wh.r*1.4 + 4, wh.y - 3, 2, 6, 0.8); }
+  }
+  if (c.kind === 'map'){ const rot = H > W*1.15, MW = rot ? WY : WX, MH = rot ? WX : WY, sc = Math.min((W*0.9)/MW, (H*0.7)/MH), mx0 = (W - MW*sc)/2, my0 = H*0.12;   // the hide: the world, as he drew it. on a tall screen it is turned, east at the top
+    const P = (tx, ty) => rot ? [mx0 + ty*sc, my0 + (WX - tx)*sc] : [mx0 + tx*sc, my0 + ty*sc];
+    sctx.fillStyle = tone(0.55); sctx.fillRect(mx0 - 4, my0 - 4, MW*sc + 8, MH*sc + 8); sctx.fillStyle = tone(0.5); sctx.fillRect(mx0, my0, MW*sc, MH*sc);
+    const st = Math.max(1, Math.round(1/sc)); for (let ty = 0; ty < WY; ty += st) for (let tx = 0; tx < WX; tx += st){ const t = terrain(tx, ty); if (t === 'snow' || t === 'bank') continue;
+      sctx.fillStyle = t === 'water' ? tone(0.2) : t === 'forest' ? tone(0.36) : t === 'trail' ? tone(0.85) : t === 'rock' ? tone(0.28) : t === 'obsidian' ? tone(0.1) : t === 'ice' ? tone(0.62) : tone(0.5);
+      const [x, y] = P(tx, ty); sctx.fillRect(x|0, y|0, Math.ceil(sc*st), Math.ceil(sc*st)); }
+    const mk = (tx, ty, v, big) => { sctx.fillStyle = v; const [px2, py2] = P(tx, ty), x = px2|0, y = py2|0; sctx.fillRect(x-1, y-1, 3, 3); if (big){ sctx.fillRect(x-3, y, 7, 1); sctx.fillRect(x, y-3, 1, 7); } };
+    mk(VX, VY, tone(0.95), true); [TOWER, CIST, BARROW].forEach((site, i) => mk(site.tx, site.ty, world.relics[i] ? tone(0.3) : EM, true));
+    beacons.forEach(b => mk(b.x/T, b.y/T, b.lit ? EM : tone(0.15), false));
+    if (frame % 40 < 25) mk(player.x/T, player.y/T, tone(1), false);
+    sctx.fillStyle = tone(0.15); for (let i = 0; i < 30; i++) sctx.fillRect((mx0 + hash(i,2)*MW*sc)|0, (my0 + hash(3,i)*MH*sc)|0, 1, 1);
+  }
+  if (c.kind === 'obelisk' || c.kind === 'lens' || c.kind === 'bell'){ [W*0.14, W*0.86].forEach((tx, k) => { const ty = H*0.2, fl = ((frame >> 2) + k*3) % 3;      // wall torches
+      sctx.fillStyle = tone(0.3); sctx.fillRect(tx-2, ty, 4, H*0.06); sctx.fillRect(tx-5, ty + H*0.03, 10, 2);
+      sctx.fillStyle = tone(0.12); sctx.fillRect(tx-3, ty-4, 6, 5);
+      sctx.fillStyle = EM; sctx.fillRect(tx-3, ty-12-fl, 6, 8+fl); sctx.fillRect(tx-1, ty-16-fl*2, 2, 5); if (fl === 1) sctx.fillRect(tx+3, ty-9, 1, 2); if (fl === 2) sctx.fillRect(tx-4, ty-7, 1, 2); }); }
+  if (c.kind === 'lens'){ const src = g.source, core = g.core, px = (x, y, w, h, v) => { sctx.fillStyle = tone(v); sctx.fillRect(Math.round(x), Math.round(y), Math.ceil(w), Math.ceil(h)); };
+    px(src.x - 8, src.y - 10, 16, 20, 0.26); px(src.x - 8, src.y - 10, 16, 1, 0.5); px(src.x - 4, src.y - 6, 8, 10, 0.06); sctx.fillStyle = EM; sctx.fillRect(src.x - 2, src.y - 3 + ((frame>>3)%2), 4, 5);   // the lamp in the wall
+    let hit = true; const chain = [src].concat(g.panels).concat([core]);                                                                                                       // the beam walks the panels while they are right
+    for (let i = 0; i < chain.length - 1; i++){ const A = chain[i], B = chain[i+1]; if (!hit) break;
+      sctx.fillStyle = EM; const n = Math.hypot(B.x - A.x, B.y - A.y)/3|0; for (let k = 0; k < n; k++) if ((k + (frame>>1)) % 3) sctx.fillRect(A.x + (B.x - A.x)*k/n|0, A.y + (B.y - A.y)*k/n|0, 2, 2);
+      if (i < g.panels.length) hit = c.panels[i] === c.want[i] || c.done > 0; }
+    g.panels.forEach((pn, i) => { const ang = c.panels[i]*Math.PI/4, dx = Math.cos(ang), dy = Math.sin(ang), ok = c.panels[i] === c.want[i];                                    // the panels: glass on a pivot, four ways to face
+      px(pn.x - 3, pn.y - 3, 6, 6, 0.3); for (let r = -12; r <= 12; r++){ px(pn.x + dx*r, pn.y + dy*r, 2, 2, ok ? 0.92 : 0.6); } px(pn.x + dx*13, pn.y + dy*13, 2, 2, 0.4); px(pn.x - dx*13, pn.y - dy*13, 2, 2, 0.4);
+      if (c.done === 0 && frame % 50 < 30){ sctx.fillStyle = tone(0.5); for (let a = 0; a < 6.3; a += 0.55) sctx.fillRect(pn.x + Math.cos(a)*18|0, pn.y + Math.sin(a)*18|0, 1, 1); } });
+    const lit = c.done > 0 ? Math.min(1, c.done/60) : 0, R = W*0.09;                                                                                                            // the core: a lighthouse lens, ridged, dark until the light finds it
+    px(core.x - R - 4, core.y - R*1.2 - 4, 2*R + 8, 2*R*1.2 + 8, 0.2); px(core.x - R - 4, core.y - R*1.2 - 4, 2*R + 8, 1, 0.45);
+    for (let ring = 0; ring < 6; ring++){ const rr = R*(0.25 + ring*0.14); sctx.fillStyle = tone(0.35 + ring*0.06 + lit*0.4); for (let a = 0; a < 6.3; a += 0.05) sctx.fillRect(core.x + Math.cos(a)*rr|0, core.y + Math.sin(a)*rr*1.2|0, 2, 2); }
+    if (lit > 0){ sctx.fillStyle = EM; for (let i = 0; i < 40*lit; i++) sctx.fillRect(core.x + Math.cos(i*1.7)*R*0.2*(1 + Math.sin(frame*0.1 + i)*0.5)|0, core.y + Math.sin(i*1.7)*R*0.24*(1 + Math.cos(frame*0.13 + i)*0.5)|0, 2, 2); }   // it wakes up inside
+    sctx.fillStyle = tone(0.12); sctx.fillRect(0, H*0.78, W, H*0.08); for (let i = 0; i < 30; i++){ sctx.fillStyle = tone(0.2); sctx.fillRect((hash(i,frame>>4)*W)|0, (H*0.78 + hash(frame>>4,i)*H*0.08)|0, 3, 1); }   // black water along the floor
+  }
+  if (c.kind === 'bell'){ const bx = g.box, px = (x, y, w, h, v) => { sctx.fillStyle = tone(v); sctx.fillRect(Math.round(x), Math.round(y), Math.ceil(w), Math.ceil(h)); }, open = c.done > 0 ? Math.min(1, c.done/90) : 0;
+    px(bx.x, bx.y, bx.w, bx.h, 0.28); px(bx.x, bx.y, bx.w, 2, 0.5); px(bx.x, bx.y, 2, bx.h, 0.42); px(bx.x, bx.y + bx.h - 2, bx.w, 2, 0.1);                                        // a stone box
+    for (let i = 0; i < 8; i++) px(bx.x + 6 + hash(i, 7)*(bx.w - 12), bx.y + 6 + hash(7, i)*(bx.h - 12), 3, 1, 0.2);                                                             // its face, worn
+    const slot = { x: bx.x + bx.w*0.15, y: bx.y + bx.h*0.2, w: bx.w*0.7, h: bx.h*0.6 }; px(slot.x, slot.y, slot.w, slot.h, 0.05);                                                  // the dark inside, once the lid moves
+    if (open > 0){ const rx = slot.x + slot.w/2, ry = slot.y + slot.h/2, R = slot.h*0.4;                                                                                            // the resonator: a stone ring with a stone hung in it, and the air around it is not still
+      sctx.fillStyle = tone(0.7); for (let a = 0; a < 6.3; a += 0.04) sctx.fillRect(rx + Math.cos(a)*R|0, ry + Math.sin(a)*R|0, 2, 2); sctx.fillStyle = tone(0.4); for (let a = 0; a < 6.3; a += 0.06) sctx.fillRect(rx + Math.cos(a)*R*0.86|0, ry + Math.sin(a)*R*0.86|0, 1, 1);
+      px(rx - 1, ry - R, 2, R*0.55, 0.5); px(rx - 5, ry - R*0.45, 10, 12, 0.85); px(rx - 5, ry - R*0.45, 3, 12, 0.95);
+      sctx.fillStyle = tone(0.55); for (let k = 1; k <= 3; k++){ const rr = R*(1.15 + k*0.22 + Math.sin(frame*0.12 + k)*0.05); for (let a = 0; a < 6.3; a += 0.12) if ((a*10|0) % 2) sctx.fillRect(rx + Math.cos(a)*rr|0, ry + Math.sin(a)*rr|0, 1, 1); } }
+    px(bx.x, bx.y, bx.w*(1 - open*0.96), bx.h, 0.34); px(bx.x, bx.y, bx.w*(1 - open*0.96), 2, 0.55); for (let i = 0; i < 5; i++) px(bx.x + 8 + i*(bx.w*(1 - open*0.96) - 16)/5, bx.y + 8, 2, bx.h - 16, 0.24);   // the lid, sliding aside
+    g.stones.forEach((st, i) => { const lit = c.flash && c.flash[0] === i && frame - c.flash[1] < 18, hgt = 12 + i*4;                                                              // five standing stones, each a note: taller is higher
+      px(st.x - 8, st.y - hgt, 16, hgt + 6, lit ? 0.9 : 0.34); px(st.x - 8, st.y - hgt, 16, 1, lit ? 1 : 0.55); px(st.x - 8, st.y + 4, 16, 2, 0.12); px(st.x - 2, st.y - hgt + 4, 4, 4, lit ? 0.5 : 0.14);
+      if (c.step === 2){ sctx.fillStyle = tone(0.6); for (let a = 0; a < 6.3; a += 0.5) sctx.fillRect(st.x + Math.cos(a)*14|0, st.y - 2 + Math.sin(a)*12|0, 1, 1); } });
+    sctx.fillStyle = tone(0.5); c.guess.forEach((gi, k) => sctx.fillRect(W*0.5 - W*0.12 + k*W*0.06|0, H*0.62|0, 4, 4));
+  }
+  if (c.kind === 'obelisk'){ const tr = g.trunk, px = (x, y, w, h, v) => { sctx.fillStyle = tone(v); sctx.fillRect(Math.round(x), Math.round(y), Math.ceil(w), Math.ceil(h)); }, open = c.done > 0 ? Math.min(1, c.done/100) : 0;
+    px(tr.x, tr.y + tr.h*0.3, tr.w, tr.h*0.7, 0.3); px(tr.x, tr.y + tr.h*0.3, 2, tr.h*0.7, 0.45); px(tr.x, tr.y + tr.h - 2, tr.w, 2, 0.1);                                        // a stone trunk, bound in iron
+    for (let i = 0; i < 3; i++) px(tr.x + tr.w*(0.2 + i*0.3), tr.y + tr.h*0.3, 5, tr.h*0.7, 0.16);
+    px(tr.x + 6, tr.y + tr.h*0.34, tr.w - 12, tr.h*0.6, 0.05);                                                                                                                       // the dark inside
+    if (open > 0){ const mx = tr.x + tr.w/2, mh = tr.h*0.5*open, mw = tr.w*0.16;                                                                                                       // the mirror: a slab of obsidian, stood up out of the trunk, a light down its edge, and something moving in its face
+      px(mx - mw/2, tr.y + tr.h*0.9 - mh, mw, mh, 0.02); px(mx + mw/2 - 2, tr.y + tr.h*0.9 - mh, 2, mh, 0.6);
+      sctx.fillStyle = tone(0.16); for (let i = 0; i < 20; i++) sctx.fillRect(mx - mw/2 + 2 + hash(i, frame>>3)*(mw - 4)|0, tr.y + tr.h*0.9 - mh + 2 + hash(frame>>3, i)*(mh - 4)|0, 1, 1); }
+    const lid = 1 - open; px(tr.x - 4, tr.y, tr.w + 8, tr.h*0.32*lid + 2, 0.36); px(tr.x - 4, tr.y, tr.w + 8, 2, 0.6); for (let i = 0; i < 3; i++) px(tr.x + tr.w*(0.2 + i*0.3), tr.y, 5, tr.h*0.32*lid + 2, 0.2);   // the lid, lifting
+    px(tr.x + tr.w/2 - 5, tr.y + tr.h*0.3, 10, 6, open > 0 ? 0.6 : 0.16);                                                                                                          // the lock
+    sctx.fillStyle = tone(0.9); c.target.forEach((k, i) => glyph(tr.x + tr.w*(0.2 + i*0.2), tr.y - H*0.05, k, W*0.04|0));                                                        // the marks, cut into the wall above it: the combination
+    g.dials.forEach((d, i) => { sctx.fillStyle = tone(0.22); for (let a = 0; a < Math.PI*2; a += 0.04) sctx.fillRect(d.x + Math.cos(a)*d.r|0, d.y + Math.sin(a)*d.r*0.7|0, 2, 2);
+      sctx.fillStyle = tone(0.12); sctx.fillRect(d.x - d.r*0.7|0, d.y - d.r*0.45|0, d.r*1.4|0, d.r*0.9|0);
+      sctx.fillStyle = c.done > 0 || c.dials[i] === c.target[i] ? tone(0.95) : tone(0.62); glyph(d.x|0, d.y|0, c.dials[i], W*0.045|0); });
+  }
+  if (c.kind === 'talk' || c.kind === 'altar') drawOldMan(g, c.kind === 'talk', c.done);
+  if (c.kind === 'altar') drawAltar(g, c.done);
+  if (c.kind !== 'talk'){
+  if (c.kind === 'obelisk' || c.kind === 'lens' || c.kind === 'bell'){ return; }
+  const lp = g.lamp; sctx.fillStyle = tone(0.06); sctx.fillRect(lp.x-6, lp.y-20, 12, 16); sctx.fillRect(lp.x-2, lp.y-25, 4, 5); sctx.fillRect(lp.x-7, lp.y-4, 14, 2);   // your lantern, in hand
+  sctx.fillStyle = tone(0.4); sctx.fillRect(lp.x-6, lp.y-20, 1, 16); sctx.fillRect(lp.x-3, lp.y-26, 6, 1);
+  if (player.lit){ sctx.fillStyle = EM; sctx.fillRect(lp.x-3, lp.y-17 + (frame%4===0?1:0), 6, 10); sctx.fillRect(lp.x-1, lp.y-19, 2, 2); }
+  else { sctx.fillStyle = tone(0.2); sctx.fillRect(lp.x-1, lp.y-10, 2, 3); sctx.fillStyle = EM; if (frame % 60 < 40) for (let a = 0; a < 6.3; a += 0.35) sctx.fillRect(lp.x + Math.cos(a)*16|0, lp.y-12 + Math.sin(a)*16|0, 1, 1); }   // out: an ember ring says touch me
+  }
+}
+function drawOldMan(g, talk, phase){ const cx = talk ? W*0.5 : W*0.22, base = talk ? H*0.74 : H*0.64, u = talk ? Math.max(2, Math.round(W/44)) : Math.max(1, Math.round(W/72));
+  const bob = Math.round((Math.sin(frame*0.012) + 1)*u*0.35), sway = Math.round(Math.sin(frame*0.007)*u*0.6);            // slow. everything moves together.
+  const px = (x, y, w, h, v) => { sctx.fillStyle = v === 'E' ? EM : tone(v); sctx.fillRect(Math.round(cx + sway + x*u), Math.round(base - bob + y*u), Math.ceil(w*u), Math.ceil(h*u)); };
+  const V = { '0': 0.02, '1': 0.07, '2': 0.14, '3': 0.24, '4': 0.42, '5': 0.6, '6': 0.2, '7': 0.11, '9': 0.9 };
+  const MAP = [   // hat, face, beard, then a poncho falling in stripes over the shoulders, legs folded under
+    "..........2222222..........",
+    "..........2222222..........",
+    "..........2222222..........",
+    "..........2222222..........",
+    "....3333333333333333333....",
+    "...222222222222222222222...",
+    "..........3333333..........",
+    ".........333393333.........",
+    ".........333333333.........",
+    "..........5555555..........",
+    ".........555555555.........",
+    "........55555555555........",
+    ".......5.555555555.5.......",
+    "......6677667766776677.....",
+    ".....667766776677667766....",
+    "....66776677667766776677...",
+    "...6677667766776677667766..",
+    "...7766776677667766776677..",
+    "..776677667766776677667766.",
+    "..667766776677667766776677.",
+    "..776677667766776677667766.",
+    "..667766776677667766776677.",
+    "..776677667766776677667766.",
+    "...67766776677667766776677.",
+    "...77667766776677667766776.",
+    "....6677667766776677667766.",
+    "....000000000000000000000..",
+    ".....0000000000000000000...",
+  ];
+  const HX = -13, HY = -28;
+  MAP.forEach((row, y) => [...row].forEach((c, x) => { if (c !== '.') px(HX + x, HY + y, 1, 1, V[c]); }));
+  px(HX + 10, HY, 1, 4, 0.42); px(HX + 3, HY + 4, 1, 1, 0.6); px(HX + 23, HY + 4, 1, 1, 0.6);                                       // light on the crown and the brim's edge
+  px(HX + 11, HY + 7, 1, 1, 0.04); px(HX + 15, HY + 7, 1, 1, 0.04); px(HX + 12, HY + 12, 3, 1, 0.42);                               // eyes under the brim, mouth in the beard
+  for (let i = 0; i < 12; i++) px(HX + 4 + i, HY + 13 + Math.floor(i*0.7), 1, 1, 0.14);                                             // the poncho's neck edge
+  for (let i = 0; i < 13; i++) px(HX + 4 + i, HY + 26 - Math.floor(Math.abs(i-6)*0.3), 1, 1, 0.14);                                 // its hem
+  for (let i = 0; i < 11; i++) px(HX + 6 + i, HY + 14 + i, 1, 1, 0.5); for (let i = 0; i < 9; i++) px(HX + 17 + i*0, HY + 25 - i, 1, 1, 0.5);   // satchel strap, shoulder to hip, and its buckle side
+  px(HX + 17, HY + 22, 5, 4, 0.14); px(HX + 17, HY + 22, 5, 1, 0.42); px(HX + 19, HY + 24, 1, 1, 0.6);                                // the satchel at his hip
+  for (let k = 0; k < 3; k++) for (let i = 0; i < 7 + k*2; i++) px(HX + 10 - k + i, HY + 14 + k + Math.floor(Math.abs(i - 3 - k)*0.25), 1, 1, k === 1 ? 0.94 : 0.8);   // three necklaces, beads, the middle one bone
+  px(HX + 3, HY + 20, 4, 3, 0.42); px(HX + 20, HY + 20, 4, 3, 0.42);                                                                // hands on his knees
+  px(HX + 3, HY + 19, 4, 1, 0.8); px(HX + 20, HY + 19, 4, 1, 0.6); px(HX + 3, HY + 23, 4, 1, 0.6);                                   // bracelets
+  // the instruments, around him where he can reach them. they move with him: the ground he sits on breathes too
+  px(-6, -3, 12, 1, 0.8); px(-6, -2, 12, 4, 0.42); px(-6, 2, 12, 1, 0.14); px(-5, -1, 1, 3, 0.14); px(4, -1, 1, 3, 0.14);          // the hand drum, front
+  px(15, -16, 1, 16, 0.6); px(15, -17, 2, 1, 0.8); for (let i = 0; i < 4; i++) px(15, -14 + i*3, 1, 1, 0.14);                     // a flute, leaning on his shoulder
+  px(-17, -6, 2, 7, 0.28); for (let i = 0; i < 5; i++) px(-19 + i, -9 - (i % 2), 1, 3, 0.42); px(-19, -10, 5, 1, 0.6);             // the leaf rattle
+  px(18, -4, 5, 4, 0.28); px(19, -6, 3, 2, 0.28); px(20, -7, 1, 1, 0.6); px(19, -1, 5, 1, 0.14);                                    // a gourd
+  px(-14, 0, 3, 2, 0.28); px(-13, -2, 1, 2, 0.6); px(-15, 2, 5, 1, 0.14);                                                          // a small bell
+  px(-22, -30, 1, 32, 0.36); px(-24, -30, 5, 1, 0.36); px(-24, -31, 1, 1, 0.36); px(-20, -31, 1, 1, 0.36);                          // his staff, behind him
+  px(-10, -7, 5, 8, 0.04); px(-9, -9, 3, 2, 0.04); px(-10, -7, 1, 8, 0.36); px(-9, 1, 3, 1, 0.36);                                  // his lantern
+  px(-9, -5 + (frame % 6 < 3 ? 0 : 1), 3, 5, 'E'); px(-8, -6, 1, 1, 'E');
+  if (!talk){ const raise = Math.min(1, phase/120); px(HX + 3, HY + 20 - raise*6, 4, 3, 0.42); px(HX + 20, HY + 20 - raise*6, 4, 3, 0.42); }   // at the table his hands lift to the work
+}
+function drawAltar(g, done){ const cx = W/2, ty = H*0.66, u = Math.round(W/36);
+  sctx.fillStyle = tone(0.4); sctx.fillRect(cx - 12*u, ty - 2*u, 24*u, 3*u); sctx.fillStyle = tone(0.12); sctx.fillRect(cx - 12*u, ty + u, 24*u, u); sctx.fillRect(cx - 10*u, ty + 2*u, 2*u, 6*u); sctx.fillRect(cx + 8*u, ty + 2*u, 2*u, 6*u);   // the stone table
+  g.sockets.forEach((sk, i) => { sctx.fillStyle = world.relics[i] ? EM : tone(0.04); sctx.fillRect(sk.x - u, ty - u, 2*u, u*0.8); });   // the three sockets
+  const ease = (a, b) => Math.max(0, Math.min(1, (done - a)/(b - a)));
+  const ox = cx, oy = ty - u, n = world.relics.filter(Boolean).length, all = n >= RELIC_COUNT;
+  const fold = all ? ease(220, 400) : 0;                                                                                          // first the hum and the drum, then the three become one thing                                                                                          // once the third is set, the three become one thing
+  // what stands on the table: each relic as itself, until they fold
+  const stand = i => world.relics[i] ? (done > 0 && closeup.socket === i ? ease(20, 110) : 1) : 0;
+  if (fold < 1){ const k = 1 - fold; sctx.fillStyle = tone(0.03);
+    if (stand(0) > 0){ const h = 14*u*stand(0)*k; for (let i = 0; i < h; i++){ const w = 2.6*u*(0.35 + 0.65*(h - i)/h); sctx.fillRect(g.sockets[0].x - w/2|0, oy - i, w|0, 1); } sctx.fillStyle = tone(0.5); sctx.fillRect(g.sockets[0].x + u*0.6|0, oy - h, 1, h|0); sctx.fillStyle = tone(0.03); }   // the obelisk, upright
+    if (stand(1) > 0){ const r = 3*u*stand(1)*k; sctx.fillStyle = tone(0.55); for (let a = 0; a < 6.3; a += 0.05) sctx.fillRect(g.sockets[1].x + Math.cos(a)*r|0, oy - 3*u + Math.sin(a)*r|0, 2, 2); sctx.fillStyle = tone(0.06); for (let a = 0; a < 6.3; a += 0.1) for (let rr = 0; rr < r*0.7; rr += 2) sctx.fillRect(g.sockets[1].x + Math.cos(a)*rr|0, oy - 3*u + Math.sin(a)*rr|0, 2, 2); sctx.fillStyle = tone(0.95); sctx.fillRect(g.sockets[1].x - 1, oy - 3*u - 1, 3, 3); }   // the eye
+    if (stand(2) > 0){ const h = 6*u*stand(2)*k; sctx.fillStyle = tone(0.42); for (let y = 0; y < h; y++){ const w = 2*u*(0.35 + 0.65*Math.pow(y/(6*u), 1.6)); sctx.fillRect(g.sockets[2].x - w|0, oy - 2*u - h + y, 2*w|0, 1); } sctx.fillStyle = tone(0.1); sctx.fillRect(g.sockets[2].x - 2*u, oy - 2*u, 4*u, 2); }   // the bell
+  }
+  if (done === 0){ const bx = cx, by = H*0.9;                                                                                                                                            // what you carried in
+    if (player.relic === 'obelisk'){ sctx.fillStyle = tone(0.03); for (let i = 0; i < 12*u; i++){ const w = 3*u*(0.4 + 0.6*i/(12*u)); sctx.fillRect(bx - w/2|0, by - 12*u + i, w|0, 1); } sctx.fillStyle = tone(0.5); sctx.fillRect(bx + u, by - 11*u, 1, 10*u); sctx.fillStyle = EM; sctx.fillRect(bx - 1, by - 8*u, 2, 2); sctx.fillRect(bx - 1, by - 5*u, 2, 2); }
+    if (player.relic === 'lens'){ sctx.fillStyle = tone(0.55); for (let a = 0; a < 6.3; a += 0.05) sctx.fillRect(bx + Math.cos(a)*3*u|0, by - 6*u + Math.sin(a)*3*u|0, 2, 2); sctx.fillStyle = tone(0.06); for (let a = 0; a < 6.3; a += 0.1) for (let r = 0; r < 2.2*u; r += 2) sctx.fillRect(bx + Math.cos(a)*r|0, by - 6*u + Math.sin(a)*r|0, 2, 2); sctx.fillStyle = tone(0.95); sctx.fillRect(bx - 1, by - 6*u - 1, 3, 3); }
+    if (player.relic === 'bell'){ sctx.fillStyle = tone(0.42); for (let y = 0; y < 6*u; y++){ const w = 2*u*(0.35 + 0.65*Math.pow(y/(6*u), 1.6)); sctx.fillRect(bx - w|0, by - 8*u + y, 2*w|0, 1); } sctx.fillStyle = tone(0.1); sctx.fillRect(bx - 2*u, by - 2*u, 4*u, 2); sctx.fillStyle = tone(0.15); sctx.fillRect(bx - 2, by - 2*u - 4, 4, 4); }
+    const si = Math.max(0, RELIC_NAME.indexOf(player.relic)); if (frame % 60 < 40){ sctx.fillStyle = tone(0.8); for (let a = 0; a < 6.3; a += 0.4) sctx.fillRect(g.sockets[si].x + Math.cos(a)*2.5*u|0, ty - u*0.6 + Math.sin(a)*1.4*u|0, 1, 1); } return; }
+  if (!all) return;                                                                                                                                                                       // not yet. it waits.
+  // the statue: a stone Mandelbrot, standing on end with its spike to the sky. it refines itself as it forms, iteration by iteration, out of a rough circle.
+  if (fold > 0){ const depth = Math.max(1, Math.round(1 + fold*fold*40)), mw = 18*u, mh = 22*u, ml = ox - mw/2, mt = oy - mh - 2;
+    sctx.fillStyle = tone(0.02); sctx.fillRect(ml - 2*u, mt - u, mw + 4*u, mh + u); sctx.fillStyle = tone(0.5); sctx.fillRect(ml + mw + 2*u - 1, mt - u, 1, mh + u);   // the obsidian slab, stood up; the set grows in its face
+    const mc = mandelCanvas(depth, mw, mh); sctx.drawImage(mc, ml, mt);
+    sctx.fillStyle = tone(0.12); sctx.fillRect(ml - 2*u, oy - u, mw + 4*u, u); sctx.fillStyle = tone(0.5); sctx.fillRect(ml - 2*u, oy - u, mw + 4*u, 1);                                   // its plinth, on the table
+    const glow = ease(400, 500), beam = ease(500, 660);
+    if (glow > 0){ sctx.fillStyle = EM; const md = mc.getContext('2d'); void md; for (let i = 0; i < 90*glow; i++){ const px = mandelEdge[i % mandelEdge.length]; if (px) sctx.fillRect(ml + px[0], mt + px[1], 1, 1); } }   // the edge catches, in the order it was carved
+    if (beam > 0){ const w = 2 + Math.round(beam*4) + (Math.sin(frame*0.3) > 0 ? 1 : 0); sctx.fillStyle = tone(1); sctx.fillRect(ox - w/2|0, 0, w, mt + 2);
+      sctx.fillStyle = tone(0.8); for (let y = 0; y < mt; y += 4) if ((y/4 + frame) % 3 === 0){ sctx.fillRect(ox - w/2 - 1|0, y, 1, 2); sctx.fillRect(ox + w/2|0, y, 1, 2); } } }
+}
+const mandelCache = {}; let mandelEdge = [];
+function mandelCanvas(depth, w, h){ const key = depth + ':' + w + ':' + h; if (mandelCache[key]) return mandelCache[key];                                                              // the set, rendered in stone: inside dark, outside stepped like carved bands
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'), img = g.createImageData(w, h), d = img.data, edge = [];
+  for (let py = 0; py < h; py++) for (let px = 0; px < w; px++){ const re = -2.15 + (py/h)*2.85, im = -1.35 + (px/w)*2.7; let zr = 0, zi = 0, k = 0;                                   // real axis runs down the statue, so the spike points up
+    while (k < depth && zr*zr + zi*zi < 4){ const t = zr*zr - zi*zi + re; zi = 2*zr*zi + im; zr = t; k++; }
+    const i = (py*w + px)*4; let v; if (k >= depth){ v = 0.06; } else { v = k <= 1 ? -1 : 0.3 + ((k % 6)/6)*0.35; if (k === depth - 1 || k === depth - 2) edge.push([px, py]); }
+    if (v < 0){ d[i+3] = 0; continue; } const tn = TONES[Math.max(0, Math.min(7, Math.round(v*7)))]; d[i] = tn[0]; d[i+1] = tn[1]; d[i+2] = tn[2]; d[i+3] = 255; }
+  g.putImageData(img, 0, 0); mandelEdge = edge; return mandelCache[key] = c; }
+
+   // the things past the wolves
+let doom = 0;
+const wolves = [];
+let started = false, dead = 0, won = false, frame = 0, msgT = 0;
+const keys = {};
+addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; start(); if (!started) return; audio.start(); audio.play(); if (e.key === ' ' || e.key.toLowerCase() === 'l') toggleLamp(); });
+addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+// hold and drag = stick; short tap = lantern toggle
+const joy = document.getElementById('joy'); let jx = 0, jy = 0, jo = null, jt = 0, jmoved = false;
+stage.addEventListener('pointerdown', e => { if (closeup.on){ closeupDown(e); return; } const fresh = !started; start(); if (!started) return; audio.start(); audio.play(); jo = [e.clientX, e.clientY]; jt = fresh ? -1e9 : performance.now(); jmoved = false;   // the tap that starts the game is not a lantern tap
+  const r = stage.getBoundingClientRect(); joy.style.left = (e.clientX-r.left)+'px'; joy.style.top = (e.clientY-r.top)+'px';
+  joy.style.display = 'block'; jx = jy = 0; joy.firstElementChild.style.transform = 'translate(-50%,-50%)'; });
+addEventListener('pointermove', e => { if (closeup.on){ closeupMove(e); return; } if (!jo) return; let dx = e.clientX-jo[0], dy = e.clientY-jo[1];
+  const d = Math.hypot(dx,dy), m = 26; if (d > 8) jmoved = true; if (!jmoved) return; if (d > m){ dx = dx/d*m; dy = dy/d*m; }
+  jx = dx/m; jy = dy/m; joy.firstElementChild.style.transform = `translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`; });
+function release(){ audio.wake(); if (closeup.on){ closeupUp(); return; } if (jo && !jmoved && performance.now()-jt < 300) toggleLamp(); jo = null; jx = jy = 0; joy.style.display = 'none'; }
+addEventListener('pointerup', release); addEventListener('pointercancel', release); addEventListener('contextmenu', e => e.preventDefault());
+function toggleLamp(){ if (!started) return; player.lit = !player.lit; say(player.lit ? 'Lantern lit.' : 'Lantern out.', 70); }
+let listening = false;
+function start(){ if (won){ location.reload(); return; } if (started) return;
+  if (!listening){ listening = true; audio.start(); const t = document.getElementById('title'); document.getElementById('tapline').style.display = 'none'; document.getElementById('brief').style.display = ''; return; }   // the first touch: the brief, and the wind
+  started = true; document.getElementById('title').style.opacity = 0; }
+const talk = { lines: [], t: 0 };
+function speak(lines){ talk.lines = lines.slice(); talk.t = 0; }
+function say(s, t = 240){ const m = document.getElementById('msg'); m.className = (closeup.on && (closeup.kind === 'talk' || closeup.kind === 'altar')) ? 'speech' : ''; m.textContent = s; m.style.opacity = 1; msgT = t; }
+
+// ---------- audio: wind, gusts, footsteps, distant beat ----------
+const audio = (() => {
+  let ac, windF, windG, gustF, gustG, rustG, rustF, snowG, crush, master, dist, on = false, whistF, whistG, fuzzG;
+  let prog = 0, nextStep = 0, step = 0, playing = false, silentNow = false;
+  function silence(v){ silentNow = v; }
+  function play(){ playing = true; wake(); }
+  function wake(){ if (ac && ac.state !== 'running') ac.resume().catch(() => {}); }   // browsers grant sound on the release of a touch, not the press
+  // one-shot categories: next fire time, last variant used
+  const cat = { gust: { next: 0, last: -1, min: 14, max: 40 } };
+  function pick(c){ let v; do { v = Math.floor(Math.random()*5); } while (v === c.last); c.last = v; return v; }
+  function arm(c, now, first){ c.next = now + (first ? c.min*0.4 : c.min) + Math.random()*(c.max-c.min); }
+  function noiseBuf(){ const b = ac.createBuffer(1, ac.sampleRate*2, ac.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random()*2-1; return b; }
+  function src(){ const s = ac.createBufferSource(); s.buffer = noiseBuf(); s.loop = true; s.start(); return s; }
+  function start(){ if (on) return; on = true; ac = new (window.AudioContext||window.webkitAudioContext)();
+    master = ac.createGain(); master.gain.value = 0.55;
+    crush = ac.createWaveShaper(); const c = new Float32Array(1024);                 // soft 7-bit grain, not a crunch
+    for (let i = 0; i < 1024; i++){ const v = i/1023*2-1; c[i] = Math.round(v*63)/63; } crush.curve = c;
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 5200;
+    crush.connect(lp); lp.connect(master);
+    const lim = ac.createDynamicsCompressor(); lim.threshold.value = -9; lim.knee.value = 4; lim.ratio.value = 12; lim.attack.value = 0.002; lim.release.value = 0.12;   // a limiter so the sum never clips
+    const top = ac.createBiquadFilter(); top.type = 'lowpass'; top.frequency.value = 7800; top.Q.value = 0.5;                                                           // and nothing harsh above it
+    master.connect(lim); lim.connect(top); top.connect(ac.destination);
+    // distance bus: far things go through a lowpass and a slow echo
+    dist = ac.createGain(); dist.gain.value = 1; const dlp = ac.createBiquadFilter(); dlp.type = 'lowpass'; dlp.frequency.value = 900;
+    const dl = ac.createDelay(1.0); dl.delayTime.value = 0.38; const fb = ac.createGain(); fb.gain.value = 0.42; const dg = ac.createGain(); dg.gain.value = 0.5;
+    dist.connect(dlp); dlp.connect(crush); dlp.connect(dl); dl.connect(fb); fb.connect(dl); dl.connect(dg); dg.connect(crush);
+    // steady wind: low, slow, hollow
+    windF = ac.createBiquadFilter(); windF.type = 'lowpass'; windF.frequency.value = 420; windF.Q.value = 0.7;                       // the body of the wind: wide, low, moving
+    windG = ac.createGain(); windG.gain.value = 0.06; const w = src(); w.connect(windF); windF.connect(windG); windG.connect(crush);
+    whistF = ac.createBiquadFilter(); whistF.type = 'bandpass'; whistF.frequency.value = 900; whistF.Q.value = 6;                      // a thin whistle that comes and goes over it
+    whistG = ac.createGain(); whistG.gain.value = 0; const wh = src(); wh.connect(whistF); whistF.connect(whistG); whistG.connect(crush);
+    const wl = ac.createOscillator(), wlg = ac.createGain(); wl.frequency.value = 0.09; wlg.gain.value = 260; wl.connect(wlg); wlg.connect(whistF.frequency); wl.start();   // the whistle wanders in pitch
+    fuzzG = ac.createGain(); fuzzG.gain.value = 0.004; const fz = src(); const fzf = ac.createBiquadFilter(); fzf.type = 'highpass'; fzf.frequency.value = 3000;                 // subtle fuzz, like grit in the air
+    const fzsh = ac.createWaveShaper(); const fc = new Float32Array(256); for (let i = 0; i < 256; i++){ const v = i/127.5-1; fc[i] = Math.abs(v) < 0.6 ? 0 : v; } fzsh.curve = fc;   // only the peaks get through: crackle
+    fz.connect(fzf); fzf.connect(fzsh); fzsh.connect(fuzzG); fuzzG.connect(crush);
+    // gust layer: same noise, higher and wider, silent until a gust
+    gustF = ac.createBiquadFilter(); gustF.type = 'bandpass'; gustF.frequency.value = 500; gustF.Q.value = 0.5;
+    gustG = ac.createGain(); gustG.gain.value = 0; const g2 = src(); g2.connect(gustF); gustF.connect(gustG); gustG.connect(crush);
+    rustF = ac.createBiquadFilter(); rustF.type = 'highpass'; rustF.frequency.value = 2200;
+    rustG = ac.createGain(); rustG.gain.value = 0; const r = src(); r.connect(rustF); rustF.connect(rustG); rustG.connect(crush);
+    const snowF = ac.createBiquadFilter(); snowF.type = 'bandpass'; snowF.frequency.value = 5200; snowF.Q.value = 1.2;
+    snowG = ac.createGain(); snowG.gain.value = 0.006; const sn = src(); sn.connect(snowF); snowF.connect(snowG); snowG.connect(crush);
+    musicStart();
+    if (ac.state === 'suspended') ac.resume();
+    const now = ac.currentTime; for (const k in cat) arm(cat[k], now, true);
+    nextStep = now + 0.1; setInterval(schedule, 40); }
+  function tick(t, inWoods, wolvesNear, progress, isInside, returning){
+    if (!on) return; const now = ac.currentTime; prog = progress; insideNow = !!isInside; retNow = !!returning;
+    const drift = 0.5 + 0.5*Math.sin(t*0.05)*Math.sin(t*0.017+1);                     // very slow breathing, never silent
+    const wander = 0.5 + 0.5*Math.sin(t*0.031 + 2)*Math.sin(t*0.013);
+    windF.frequency.setTargetAtTime(280 + drift*260 + wander*180, now, 1.5);
+    windG.gain.setTargetAtTime(0.05 + drift*0.045, now, 2);
+    whistG.gain.setTargetAtTime(wander > 0.6 ? (wander - 0.6)*0.05 : 0, now, 2.5);                                                    // the whistle only when the air is right
+    fuzzG.gain.setTargetAtTime(0.003 + drift*0.004, now, 2);
+    rustG.gain.setTargetAtTime(inWoods ? 0.006 : 0.002, now, 1.5);
+    snowG.gain.setTargetAtTime(0.004 + drift*0.004, now, 0.5);
+    if (now > cat.gust.next){ gust(now, pick(cat.gust)); arm(cat.gust, now); }
+  }
+  // five gusts: [rise, hold, fall, peak gain, peak freq]
+  const GUSTS = [[2.5,1.0,4.0,0.16,620],[1.2,0.3,2.5,0.12,900],[4.0,2.0,6.0,0.20,480],[0.8,0.2,1.6,0.09,1100],[3.0,0.0,7.0,0.14,700]];
+  let lastGust = null;
+  function windPower(){ if (!on || !lastGust) return 0.15; const e = ac.currentTime - lastGust.t, [ri, ho, fa, pk] = lastGust.g;
+    const env = e < 0 ? 0 : e < ri ? e/ri : e < ri+ho ? 1 : e < ri+ho+fa ? 1-(e-ri-ho)/fa : 0; return 0.15 + env*pk/0.2*0.85; }
+  function gust(t, v){ const [ri, ho, fa, pk, fq] = GUSTS[v]; lastGust = { t, g: GUSTS[v] };
+    gustG.gain.cancelScheduledValues(t); gustG.gain.setValueAtTime(0, t); gustG.gain.linearRampToValueAtTime(pk, t+ri); gustG.gain.setValueAtTime(pk, t+ri+ho); gustG.gain.linearRampToValueAtTime(0, t+ri+ho+fa);
+    gustF.frequency.cancelScheduledValues(t); gustF.frequency.setValueAtTime(300, t); gustF.frequency.linearRampToValueAtTime(fq, t+ri); gustF.frequency.linearRampToValueAtTime(260, t+ri+ho+fa);
+    rustG.gain.setTargetAtTime(0.012*pk/0.16, t+ri*0.6, 0.8); rustG.gain.setTargetAtTime(0.003, t+ri+ho+1, 2);
+    windF.frequency.cancelScheduledValues(t); windF.frequency.setTargetAtTime(700 + pk*3000, t, ri*0.7); windF.frequency.setTargetAtTime(380, t+ri+ho, fa*0.6);   // the body opens up
+    whistG.gain.cancelScheduledValues(t); whistG.gain.setTargetAtTime(pk*0.4, t+ri*0.5, ri*0.5); whistG.gain.setTargetAtTime(0.0, t+ri+ho, fa*0.5);
+    fuzzG.gain.cancelScheduledValues(t); fuzzG.gain.setTargetAtTime(0.004 + pk*0.05, t, ri*0.5); fuzzG.gain.setTargetAtTime(0.004, t+ri+ho, fa*0.5); }
+  // footsteps: [noise band, band Q, gain, decay, tone freq, tone gain]
+  const STEPS = { snow:[260,0.6,0.34,0.09,0,0], trail:[420,0.8,0.30,0.07,0,0], forest:[300,0.6,0.32,0.1,0,0], bank:[240,0.5,0.32,0.11,0,0],
+    pier:[900,1.2,0.22,0.06,170,0.16], ice:[380,0.9,0.34,0.26,170,0.2], obsidian:[1600,2.0,0.18,0.05,2600,0.06], stone:[160,0.7,0.36,0.14,64,0.22], stair:[130,0.6,0.4,0.18,52,0.26], wet:[220,0.5,0.3,0.2,80,0.14] };
+  let foot = 0;
+  function stepSound(ground){ if (!on) return; const t = ac.currentTime, [bf, q, v, dec, tf, tv] = STEPS[ground] || STEPS.snow; foot ^= 1;
+    const det = foot ? 1.0 : 0.88, s = ac.createBufferSource(); s.buffer = noiseBuf();
+    const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = bf*det; f.Q.value = q;
+    const g = ac.createGain(); g.gain.setValueAtTime(v*(0.85+Math.random()*0.3), t); g.gain.exponentialRampToValueAtTime(0.001, t+dec);
+    s.connect(f); f.connect(g); g.connect(crush); s.start(t); s.stop(t+dec+0.02);
+    if (tf){ const o = ac.createOscillator(), og = ac.createGain(); o.frequency.value = tf*det; og.gain.setValueAtTime(tv, t); og.gain.exponentialRampToValueAtTime(0.001, t+dec*1.6);
+      o.connect(og); og.connect(crush); o.start(t); o.stop(t+dec*1.7); }
+    if (ground === 'stone' || ground === 'stair' || ground === 'wet'){ const e = ac.createBufferSource(); e.buffer = noiseBuf(); const ef = ac.createBiquadFilter(); ef.type = 'lowpass'; ef.frequency.value = 500;   // and a short stone-room tail behind each step
+      const eg = ac.createGain(); eg.gain.setValueAtTime(0, t + 0.04); eg.gain.linearRampToValueAtTime(0.06, t + 0.06); eg.gain.exponentialRampToValueAtTime(0.001, t + 0.34); e.connect(ef); ef.connect(eg); eg.connect(crush); e.start(t + 0.04); e.stop(t + 0.4); }
+    if (ground === 'ice'){ const o = ac.createOscillator(), og = ac.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(900, t); o.frequency.exponentialRampToValueAtTime(380, t+0.09);   // ice: a thick pane taking weight, a low crack under a dull ring
+      og.gain.setValueAtTime(0.09, t); og.gain.exponentialRampToValueAtTime(0.001, t+0.35); o.connect(og); og.connect(crush); o.start(t); o.stop(t+0.36);
+      if (Math.random() < 0.3){ const cr = ac.createOscillator(), crg = ac.createGain(); cr.type = 'sawtooth'; cr.frequency.setValueAtTime(140, t+0.03); cr.frequency.exponentialRampToValueAtTime(60, t+0.12); crg.gain.setValueAtTime(0.12, t+0.03); crg.gain.exponentialRampToValueAtTime(0.001, t+0.16); cr.connect(crg); crg.connect(crush); cr.start(t+0.03); cr.stop(t+0.18); } }
+    if (ground === 'forest' && Math.random() < 0.25){ const c = ac.createBufferSource(); c.buffer = noiseBuf(); const cf = ac.createBiquadFilter(); cf.type = 'highpass'; cf.frequency.value = 3000;
+      const cg = ac.createGain(); cg.gain.setValueAtTime(0.1, t+0.02); cg.gain.exponentialRampToValueAtTime(0.001, t+0.05); c.connect(cf); cf.connect(cg); cg.connect(crush); c.start(t+0.02); c.stop(t+0.06); } } // twig
+  // music: a drone pad under everything, tribal drums that quicken toward the tower. 16-bit character: simple waves, short decays, 10-bit grain.
+  let padA, padB, padF, padG, drumF, drumG, drumCrush, insideNow = false, retNow = false, acidBus, acidG, dly, dlyG, dlyFb, dlyLfo;
+  function musicStart(){
+    drumCrush = ac.createWaveShaper(); const c = new Float32Array(1024); for (let i = 0; i < 1024; i++){ const v = i/1023*2-1; c[i] = Math.round(v*511)/511; } drumCrush.curve = c;
+    drumF = ac.createBiquadFilter(); drumF.type = 'lowpass'; drumF.frequency.value = 3800; drumG = ac.createGain(); drumG.gain.value = 0;
+    drumCrush.connect(drumF); drumF.connect(drumG); drumG.connect(master);
+    padF = ac.createBiquadFilter(); padF.type = 'lowpass'; padF.frequency.value = 320; padF.Q.value = 2; padG = ac.createGain(); padG.gain.value = 0.05;
+    padA = ac.createOscillator(); padA.type = 'triangle'; padA.frequency.value = 55; padB = ac.createOscillator(); padB.type = 'sawtooth'; padB.frequency.value = 82.6; 
+    const bg = ac.createGain(); bg.gain.value = 0.35; padA.connect(padF); padB.connect(bg); bg.connect(padF); padF.connect(padG); padG.connect(master); padA.start(); padB.start();
+    const lfo = ac.createOscillator(), lg = ac.createGain(); lfo.frequency.value = 0.045; lg.gain.value = 140; lfo.connect(lg); lg.connect(padF.frequency); lfo.start();
+    // the return: acid line and a wobbling feedback delay, all through the same 10-bit grain
+    acidBus = ac.createGain(); acidG = ac.createGain(); acidG.gain.value = 0; acidBus.connect(drumCrush); acidBus.connect(acidG);
+    dly = ac.createDelay(1); dly.delayTime.value = 0.32; dlyFb = ac.createGain(); dlyFb.gain.value = 0.5; const dlF = ac.createBiquadFilter(); dlF.type = 'lowpass'; dlF.frequency.value = 2400;
+    dlyG = ac.createGain(); dlyG.gain.value = 0.55; acidG.connect(dly); dly.connect(dlF); dlF.connect(dlyFb); dlyFb.connect(dly); dlF.connect(dlyG); dlyG.connect(drumCrush);
+    dlyLfo = ac.createOscillator(); const dl = ac.createGain(); dlyLfo.frequency.value = 0.11; dl.gain.value = 0.018; dlyLfo.connect(dl); dl.connect(dly.delayTime); dlyLfo.start(); }
+  function musicTick(now){
+    const bpm = retNow ? 118 + prog*82 : 56 + prog*104;                   // out: 56 to 160. home: 118 to 200
+    padG.gain.setTargetAtTime(playing && !silentNow ? 0.045 + prog*0.05 : 0, now, 2);
+    padB.frequency.setTargetAtTime(82.6 * (1 + (retNow ? 0.012 + prog*0.02 : prog*0.012)), now, 2);   // the fifth goes sour, then sourer
+    drumG.gain.setTargetAtTime(!playing || silentNow || (prog < 0.06 && !retNow) ? 0 : 0.12 + prog*0.5, now, 1.5);
+    drumF.frequency.setTargetAtTime(insideNow ? 520 : 1400 + prog*3000, now, 1.2);   // inside: highs gone, bass and mids only
+    acidG.gain.setTargetAtTime(retNow && !insideNow ? 0.1 + prog*0.3 : 0, now, 2);
+    if (retNow){ dly.delayTime.setTargetAtTime(60/bpm/2 * (prog > 0.5 ? 0.75 : 1), now, 3); dlyFb.gain.setTargetAtTime(0.4 + prog*0.35, now, 3); }
+    return 60/bpm/3; }                                                   // twelve steps to the bar, triplet feel
+  function schedule(){ const now = ac.currentTime; const st = musicTick(now);
+    while (nextStep < now + 0.15){ hit(step, nextStep, st); step++; nextStep += st; } }
+  function hit(i, t, st){ const bar = Math.floor(i/12), p = i%12, hb = hash(bar, 23), hs = hash(bar, p*7);
+    const dense = prog;                                                   // more voices as it builds
+    if (p === 0 || p === 6 || (p === 9 && hb > 0.4)) low(t, p === 0 ? 1 : 0.7);
+    if ((p === 3 || p === 10) && dense > 0.15) high(t, 0.6);
+    if (dense > 0.35 && (p === 4 || p === 8) && hs > 0.3) high(t, 0.35);
+    if (dense > 0.5 && p % 2 === 1 && hs > 0.45) rim(t, 0.3);
+    if (!insideNow && dense > 0.25 && p % 3 === 1) shaker(t, 0.12 + dense*0.2);
+    if (dense > 0.8 && p === 11 && hb > 0.5){ low(t, 0.5); low(t + st/2, 0.5); }
+    if (p === 0 && bar % 4 === 0) boom(t, 0.5 + dense*0.4);
+    if (retNow && !insideNow){ const seq = [0,3,5,7,10,12,15,0,7,3,12,5], deg = seq[(p + bar*5)%12] + (hs > 0.7 ? 12 : 0);
+      if (hs > 0.28 || p % 4 === 0) acid(t, 55 * Math.pow(2, deg/12), st, hs > 0.8);
+      if (dense > 0.3 && (p === 2 || p === 7 || (p === 11 && hb > 0.5)) && hs > 0.4) bleep(t, 440 * Math.pow(2, seq[(bar+p)%12]/12), dense);
+      if (dense > 0.6 && p % 3 === 0 && hb > 0.6) high(t + st*0.5, 0.3); } }
+  function acid(t, f, st, acc){ const o = ac.createOscillator(), fl = ac.createBiquadFilter(), g = ac.createGain(); o.type = 'square'; o.frequency.value = f;
+    fl.type = 'lowpass'; fl.Q.value = acc ? 16 : 9; const top = 260 + prog*2600 + (acc ? 1200 : 0); fl.frequency.setValueAtTime(top, t); fl.frequency.exponentialRampToValueAtTime(140, t + st*0.9);
+    g.gain.setValueAtTime(acc ? 0.34 : 0.22, t); g.gain.exponentialRampToValueAtTime(0.001, t + st*0.95); o.connect(fl); fl.connect(g); g.connect(acidBus); o.start(t); o.stop(t + st); }
+  function bleep(t, f, v){ const o = ac.createOscillator(), g = ac.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f*1.5, t+0.12);
+    g.gain.setValueAtTime(0.16*v, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.16); o.connect(g); g.connect(acidG); o.start(t); o.stop(t+0.18); }
+  function low(t, v){ const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(52, t+0.18);
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.42); o.connect(g); g.connect(drumCrush); o.start(t); o.stop(t+0.45); }
+  function high(t, v){ const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(240, t); o.frequency.exponentialRampToValueAtTime(150, t+0.1);
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.22); o.connect(g); g.connect(drumCrush); o.start(t); o.stop(t+0.25); }
+  function rim(t, v){ const o = ac.createOscillator(), g = ac.createGain(); o.type = 'square'; o.frequency.value = 900;
+    g.gain.setValueAtTime(v*0.4, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.03); o.connect(g); g.connect(drumCrush); o.start(t); o.stop(t+0.04); }
+  function shaker(t, v){ const s = ac.createBufferSource(); s.buffer = noiseBuf(); const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 5200; f.Q.value = 1.5;
+    const g = ac.createGain(); g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.07); s.connect(f); f.connect(g); g.connect(drumCrush); s.start(t); s.stop(t+0.08); }
+  function boom(t, v){ const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(70, t); o.frequency.exponentialRampToValueAtTime(34, t+0.6);
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t+1.4); o.connect(g); g.connect(drumCrush); o.start(t); o.stop(t+1.5); }
+  // the old man: a hand drum and a voice, heard by distance. he never stops, so the sound is also the way home.
+  // his song: an old man's. low, breathy, a little cracked, phrases with a breath between, and a rise every fourth phrase that costs him something.
+  const SCALE = [0, 3, 5, 7, 10], snap = n => { const o = Math.floor(n/12)*12, d = n - o; let best = SCALE[0], bd = 99; for (const sd of SCALE.concat([12])){ if (Math.abs(sd - d) < bd){ bd = Math.abs(sd - d); best = sd; } } return o + best; }, above = n => { const o = Math.floor(n/12)*12, d = snap(n) - o, i = SCALE.indexOf(d); return i < 0 ? n : (i === SCALE.length-1 ? o + 12 + SCALE[0] : o + SCALE[i+1]); };   // every note lands on the scale; a harmony is the next step up it
+  const BREAKS = [                                                                                                              // k kick, s snare, h hat; sixteen steps; values are velocities
+    { k:[0,0,0,0, 0,0,0,0, 0,0,0.5,0, 0,0,0,0.35], s:[0,0,0,0, 1,0,0,0.3, 0,0,0,0.35, 1,0,0,0], h:[0.6,0,0.35,0, 0.5,0,0.3,0, 0.6,0,0.35,0, 0.5,0,0.3,0.2] },   // the plain one
+    { k:[0,0,0,0, 0,0,0.45,0, 0,0,0.5,0, 0,0,0,0], s:[0,0,0,0, 1,0,0,0, 0,0.3,0,0, 1,0,0,0.3], h:[0.6,0,0.35,0.2, 0.5,0,0.35,0, 0.6,0.2,0.35,0, 0.5,0,0.35,0] },   // the one that leans forward
+    { k:[0,0,0,0.4, 0,0,0,0, 0,0,0.5,0, 0,0,0.35,0], s:[0,0,0,0, 1,0,0.25,0, 0,0,0,0, 1,0,0,0.3], h:[0.5,0.2,0.3,0, 0.5,0,0.3,0.2, 0.5,0,0.3,0, 0.5,0.2,0.3,0] } ];   // the broken one
+  let drumBus = null; const drums = () => { if (!drumBus){ drumBus = ac.createGain(); drumBus.gain.value = 1.35; drumBus.connect(master); } return drumBus; };   // the hands sit a little above everything else
+  const DENSITY = 0.35 + Math.random()*0.3;                                                                                    // how busy his hands are this evening
+  const KEY = [0, -2, 3, 5][Math.random()*4|0], SHAKE = [[1,0.35,0.6,0.35],[0.4,1,0.4,0.7],[1,0.5,0.5,1],[0.6,0.3,1,0.3]][Math.random()*4|0], ORDER = [0,1,2,3].sort(() => Math.random()-0.5), SWING = Math.random()*0.04;   // this evening's version of the song
+  let voice = null, vG = null, vEnv = null, breath = null, bEnv = null, drone = null, dG = null, phrase = 0, bar = 0, quiet = false, flute = null, fEnv = null, fBreath = null, fBf = null, fBEnv = null;
+  const PHRASES = [ [[0,1],[3,0.5],[5,0.5],[3,1],[0,1.5]], [[5,0.5],[7,0.5],[5,1],[3,1],[0,1.5]], [[-2,1],[0,0.5],[3,0.5],[3,1],[0,1.5]], [[7,0.5],[10,0.5],[12,1.5],[7,0.5],[5,0.5],[3,1]] ];   // semitones over A2, beats
+  function shamanQuiet(q){ quiet = q; }
+  function shamanBeat(now, beat, g){
+    if (!voice){ voice = ac.createOscillator(); voice.type = 'triangle'; vEnv = ac.createGain(); vEnv.gain.value = 0; vG = ac.createGain(); vG.gain.value = 0;   // a chant: two vowel formants over a soft wave
+      const fa = ac.createBiquadFilter(); fa.type = 'bandpass'; fa.frequency.value = 620; fa.Q.value = 3.5; const fb2 = ac.createBiquadFilter(); fb2.type = 'bandpass'; fb2.frequency.value = 1150; fb2.Q.value = 5;
+      const fbody = ac.createBiquadFilter(); fbody.type = 'lowpass'; fbody.frequency.value = 700; const ga = ac.createGain(), gb = ac.createGain(), gc = ac.createGain(); ga.gain.value = 0.9; gb.gain.value = 0.45; gc.gain.value = 0.5;
+      voice.connect(fa); fa.connect(ga); voice.connect(fb2); fb2.connect(gb); voice.connect(fbody); fbody.connect(gc); ga.connect(vEnv); gb.connect(vEnv); gc.connect(vEnv); vEnv.connect(vG); vG.connect(master); voice.start();
+      const fLfo = ac.createOscillator(), fLg = ac.createGain(); fLfo.frequency.value = 0.21; fLg.gain.value = 120; fLfo.connect(fLg); fLg.connect(fa.frequency); fLfo.start();                     // the vowel drifts, ah to oh
+      const vib = ac.createOscillator(), vibG = ac.createGain(); vib.frequency.value = 4.3; vibG.gain.value = 2.2; vib.connect(vibG); vibG.connect(voice.frequency); vib.start();
+      const wob = ac.createOscillator(), wobG = ac.createGain(); wob.frequency.value = 0.37; wobG.gain.value = 1.4; wob.connect(wobG); wobG.connect(voice.frequency); wob.start();   // the slow wander of a voice that is tired
+      breath = ac.createBufferSource(); breath.buffer = noiseBuf(); breath.loop = true; const bf = ac.createBiquadFilter(); bf.type = 'bandpass'; bf.frequency.value = 1400; bf.Q.value = 0.7;
+      bEnv = ac.createGain(); bEnv.gain.value = 0; breath.connect(bf); bf.connect(bEnv); bEnv.connect(vG); breath.start();
+      drone = ac.createOscillator(); drone.type = 'sine'; drone.frequency.value = 82.4 * Math.pow(2, KEY/12); dG = ac.createGain(); dG.gain.value = 0; const df = ac.createBiquadFilter(); df.type = 'lowpass'; df.frequency.value = 200;
+      drone.connect(df); df.connect(dG); dG.connect(master); drone.start(); }
+    if (!flute){ flute = ac.createOscillator(); flute.type = 'triangle'; fEnv = ac.createGain(); fEnv.gain.value = 0; const ff = ac.createBiquadFilter(); ff.type = 'lowpass'; ff.frequency.value = 2400;
+      flute.connect(ff); ff.connect(fEnv); fEnv.connect(vG); flute.start(); const fv = ac.createOscillator(), fvG = ac.createGain(); fv.frequency.value = 5.6; fvG.gain.value = 4; fv.connect(fvG); fvG.connect(flute.frequency); fv.start();
+      fBreath = ac.createBufferSource(); fBreath.buffer = noiseBuf(); fBreath.loop = true; fBf = ac.createBiquadFilter(); fBf.type = 'bandpass'; fBf.Q.value = 2.5; fBEnv = ac.createGain(); fBEnv.gain.value = 0;
+      fBreath.connect(fBf); fBf.connect(fBEnv); fBEnv.connect(vG); fBreath.start(); }
+    vG.gain.setTargetAtTime(g*0.42, now, 0.5); dG.gain.setTargetAtTime(g*0.03, now, 0.8);
+    if (beat === 0 && !quiet){ bar++;
+      // the kick and the sub: half-time, one per bar, felt more than heard
+      { const k = ac.createOscillator(), kg = ac.createGain(); k.frequency.setValueAtTime(90, now); k.frequency.exponentialRampToValueAtTime(38, now + 0.12);
+        kg.gain.setValueAtTime(0, now); kg.gain.linearRampToValueAtTime(g*0.5, now + 0.006); kg.gain.exponentialRampToValueAtTime(0.001, now + 0.45); k.connect(kg); kg.connect(drums()); k.start(now); k.stop(now + 0.5);
+        const sub = ac.createOscillator(), sg = ac.createGain(); sub.frequency.value = (bar % 4 === 3 ? 41.2 : 55) * Math.pow(2, KEY/12); sg.gain.value = 0; sg.gain.setValueAtTime(0, now); sg.gain.linearRampToValueAtTime(g*0.28, now + 0.35);   // starts from silence: no pop
+        sg.gain.setTargetAtTime(g*0.2, now + 0.4, 0.4); sg.gain.setTargetAtTime(0.0, now + 1.15, 0.1); sub.connect(sg); sg.connect(master); sub.start(now); sub.stop(now + 1.7); }
+      if (bar % 2 === 1){ const B = 0.375; let t = now + 0.06;
+        const loopBar = (bar - 1) % 8; if (loopBar === 0 || loopBar === 4){ const ph = PHRASES[ORDER[loopBar === 0 ? 0 : 1]], rise = false; phrase++;                              // his voice, one phrase, then he rests
+          voice.type = pureOn ? 'sine' : 'triangle'; flute.type = pureOn ? 'sine' : 'triangle';
+          if (!pureOn){ bEnv.gain.setValueAtTime(0.0, Math.max(0, t - 0.05)); bEnv.gain.linearRampToValueAtTime(0.11, t + 0.12); bEnv.gain.setTargetAtTime(0.05, t + 0.15, 0.3); }
+          ph.forEach(([semi, len], i) => { const crack = hash(phrase, i) > 0.82, f = 164.8 * Math.pow(2, (snap(semi + (rise ? 7 : 0)) + KEY - (crack ? 0.35 : 0))/12) * (1 + (hash(i, phrase)-0.5)*0.014);
+            voice.frequency.setValueAtTime(f*0.965, t); voice.frequency.setTargetAtTime(f, t + 0.02, 0.09);
+            const peak = (rise ? 1.4 : 0.9 + hash(semi, phrase)*0.45) * (semi > 8 ? 0.85 : 1);                                   // his voice sits above the drum now
+            vEnv.gain.setValueAtTime(0.02, t); vEnv.gain.linearRampToValueAtTime(peak, t + 0.14); vEnv.gain.setTargetAtTime(peak*0.7, t + 0.16, len*B*0.6);
+            if (crack && !pureOn){ vEnv.gain.setValueAtTime(peak*0.25, t + len*B*0.4); vEnv.gain.linearRampToValueAtTime(peak*0.65, t + len*B*0.4 + 0.08); }
+            vEnv.gain.setTargetAtTime(0.0, t + len*B - 0.07, 0.05); t += len*B; });
+          bEnv.gain.setTargetAtTime(0.05, t - 0.1, 0.15); bEnv.gain.setTargetAtTime(0.0, t + 0.3, 0.2); drone.frequency.setTargetAtTime((rise ? 110 : 82.4) * Math.pow(2, KEY/12), now, 1.5); }
+        else { const ph = PHRASES[ORDER[loopBar === 2 ? 2 : 3]], echo = loopBar === 2, rise = loopBar === 6; drone.frequency.setTargetAtTime((rise ? 110 : 82.4) * Math.pow(2, KEY/12), now, 1.2);   // the last answer of the loop is an octave up, and the drone lifts under it                                                     // the flute answers, an octave and a half up, on the same grid as the drum
+          ph.forEach(([semi, len], i) => { const f = 440 * Math.pow(2, (((echo || i % 2 === 0) ? snap(semi) : above(semi)) + KEY + (rise ? 12 : 0))/12); flute.frequency.setValueAtTime(f*0.94, t); flute.frequency.setTargetAtTime(f, t, 0.06); fBf.frequency.setValueAtTime(Math.min(3000, f*2), t);
+            const pk = 0.09 + hash(semi, bar)*0.05; fEnv.gain.setValueAtTime(0.0, t); fEnv.gain.linearRampToValueAtTime(pk, t + 0.09); fEnv.gain.setTargetAtTime(pk*0.6, t + 0.1, len*B*0.5); fEnv.gain.setTargetAtTime(0.0, t + len*B - 0.05, 0.04);
+            fBEnv.gain.setValueAtTime(0.0, t); fBEnv.gain.linearRampToValueAtTime(0.025, t + 0.04); fBEnv.gain.setTargetAtTime(0.0, t + 0.1, 0.12); t += len*B; }); } } }
+    if (g > 0 && beat === 0){ const S = BEAT/3;                                                                                    // hands on a frame drum: twelve pulses to the bar, in threes, and no two bars alike
+      const dum = (t, v) => { const o = ac.createOscillator(), og = ac.createGain(); o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(70, t + 0.09);           // the open low note, palm in the middle
+        og.gain.setValueAtTime(0, t); og.gain.linearRampToValueAtTime(g*0.32*v, t + 0.006); og.gain.exponentialRampToValueAtTime(0.001, t + 0.24); o.connect(og); og.connect(drums()); o.start(t); o.stop(t + 0.28);
+        const sk = ac.createBufferSource(); sk.buffer = noiseBuf(); const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900; const sg = ac.createGain(); sg.gain.setValueAtTime(g*0.08*v, t); sg.gain.exponentialRampToValueAtTime(0.001, t + 0.03); sk.connect(f); f.connect(sg); sg.connect(drums()); sk.start(t); sk.stop(t + 0.05); };
+      const tek = (t, v) => { const sk = ac.createBufferSource(); sk.buffer = noiseBuf(); const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1900 + v*900; f.Q.value = 2.5;      // the edge note, fingertips on the rim
+        const sg = ac.createGain(); sg.gain.setValueAtTime(g*0.14*v, t); sg.gain.exponentialRampToValueAtTime(0.001, t + 0.05 + v*0.04); sk.connect(f); f.connect(sg); sg.connect(drums()); sk.start(t); sk.stop(t + 0.12);
+        const o = ac.createOscillator(), og = ac.createGain(); o.frequency.setValueAtTime(420, t); o.frequency.exponentialRampToValueAtTime(300, t + 0.04); og.gain.setValueAtTime(g*0.05*v, t); og.gain.exponentialRampToValueAtTime(0.001, t + 0.05); o.connect(og); og.connect(drums()); o.start(t); o.stop(t + 0.07); };
+      const stick = (t, v) => { const o = ac.createOscillator(), og = ac.createGain(); o.type = 'square'; o.frequency.value = 1100 + hash(bar, t*1000|0)*400; og.gain.setValueAtTime(g*0.05*v, t); og.gain.exponentialRampToValueAtTime(0.001, t + 0.025); o.connect(og); og.connect(drums()); o.start(t); o.stop(t + 0.03); };   // two sticks
+      const leaves = (t, len, v) => { const sh = ac.createBufferSource(); sh.buffer = noiseBuf(); const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 4200; f.Q.value = 1.1;        // the rattle, shaken, not struck: a swell
+        const gg = ac.createGain(); gg.gain.setValueAtTime(0.001, t); gg.gain.exponentialRampToValueAtTime(g*0.06*v, t + len*0.4); gg.gain.exponentialRampToValueAtTime(0.001, t + len); sh.connect(f); f.connect(gg); gg.connect(drums()); sh.start(t); sh.stop(t + len + 0.02); };
+      // the pattern for this bar: strong pulses fixed, everything between decided by the bar's own number, so it turns over without repeating
+      for (let st = 0; st < 12; st++){ const t = now + st*S + (st % 3 === 2 ? SWING*1.5 : 0), r = hash(bar*7 + 3, st*11 + 1), r2 = hash(st*5 + 2, bar*3 + 9);
+        if (st === 0) dum(t, 1);
+        else if (st === 6){ if (r < 0.7) dum(t, 0.8); else tek(t, 0.9); }
+        else if (st % 3 === 0){ if (r < 0.5) dum(t, 0.55); else if (r < 0.85) tek(t, 0.7); }                                          // the other strong pulses: a dum or a tek or a rest
+        else if (r < DENSITY){ tek(t, 0.4 + r2*0.45); if (r2 > 0.8) tek(t + S*0.5, 0.35); }                                          // the weak ones: fingertips, sometimes doubled
+        if (r2 > 0.86 && st % 3 !== 0) stick(t, 0.7); }
+      if (hash(bar, 17) < 0.55) leaves(now + 6*S, 4*S, 0.8 + hash(bar, 18)*0.4);                                                  // the leaves come and go, mostly on the second half
+      if (bar % 8 === 7){ for (let i = 0; i < 5; i++) tek(now + 9*S + i*S*0.5, 0.5 + i*0.1); leaves(now + 9*S, 3*S, 1.2); }          // the end of the loop: a quick run of fingertips into the one
+    }
+  }
+  // the ceremony clock lives on the audio clock, not the frame counter: a bar is exactly 1.5 s wherever it plays, and every phrase lands on the one
+  const BEAT = 0.375; let cerNext = -1, cerBeat = 0, cerBar0 = 0, cerG = 0;
+  function ceremonyTick(dist){ if (!on) return; const now = ac.currentTime; cerG = quiet ? 0 : Math.max(0, 1 - dist/260);
+    if (cerNext < 0) cerNext = now + 0.1;
+    while (cerNext < now + 0.25){ const beat = cerBeat % 4; if (beat === 0) cerBar0 = cerNext; shamanBeat(cerNext, beat, cerG); cerBeat++; cerNext += BEAT; } }
+  function beatPhase(){ if (!on || cerNext < 0) return 0; const p = (ac.currentTime - cerBar0)/(BEAT*4); return p < 0 ? 0 : p % 1; }   // 0..1 through the bar, for the hands and the glow
+  // the pickup: a burst of kicks, fast and uneven, like something knocking to be let out
+  function eat(){ if (!on) return; const now = ac.currentTime, n = 9 + (Math.random()*4|0); let t = now;                                            // the oil flurry, with snares and hats in it: a small fit of drumming
+    for (let i = 0; i < n; i++){ const last = i === n-1, kind = last ? 'k' : ['k','k','s','h','k','h','s'][(Math.random()*7)|0];
+      if (kind === 'k'){ const k = ac.createOscillator(), kg = ac.createGain(), v = last ? 0.55 : 0.28 + Math.random()*0.15; k.frequency.setValueAtTime(last ? 130 : 95 + Math.random()*30, t); k.frequency.exponentialRampToValueAtTime(last ? 45 : 36, t + 0.09);
+        kg.gain.setValueAtTime(0, t); kg.gain.linearRampToValueAtTime(v, t + 0.004); kg.gain.exponentialRampToValueAtTime(0.001, t + (last ? 0.35 : 0.1)); k.connect(kg); kg.connect(master); k.start(t); k.stop(t + 0.4); }
+      else if (kind === 's'){ const sn = ac.createBufferSource(); sn.buffer = noiseBuf(); const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2200 + Math.random()*1200; f.Q.value = 0.8;
+        const sg = ac.createGain(); sg.gain.setValueAtTime(0.16 + Math.random()*0.1, t); sg.gain.exponentialRampToValueAtTime(0.001, t + 0.09); sn.connect(f); f.connect(sg); sg.connect(master); sn.start(t); sn.stop(t + 0.12);
+        const b2 = ac.createOscillator(), bg = ac.createGain(); b2.frequency.setValueAtTime(200, t); b2.frequency.exponentialRampToValueAtTime(130, t + 0.04); bg.gain.setValueAtTime(0.14, t); bg.gain.exponentialRampToValueAtTime(0.001, t + 0.06); b2.connect(bg); bg.connect(master); b2.start(t); b2.stop(t + 0.08); }
+      else { const h = ac.createBufferSource(); h.buffer = noiseBuf(); const hf = ac.createBiquadFilter(); hf.type = 'highpass'; hf.frequency.value = 7000; const hg = ac.createGain(); const open = Math.random() < 0.3;
+        hg.gain.setValueAtTime(0.09, t); hg.gain.exponentialRampToValueAtTime(0.001, t + (open ? 0.12 : 0.03)); h.connect(hf); hf.connect(hg); hg.connect(master); h.start(t); h.stop(t + 0.15); }
+      t += [0.05, 0.07, 0.035, 0.1, 0.055, 0.08, 0.045][(Math.random()*7)|0]; } }
+  function pickup(){ if (!on) return; const now = ac.currentTime, n = 5 + (Math.random()*3|0); let t = now;
+    for (let i = 0; i < n; i++){ const k = ac.createOscillator(), kg = ac.createGain(), v = 0.32 + Math.random()*0.18, hi = i === n-1;
+      k.frequency.setValueAtTime(hi ? 140 : 100 + Math.random()*30, t); k.frequency.exponentialRampToValueAtTime(hi ? 55 : 36, t + 0.09);
+      kg.gain.setValueAtTime(0, t); kg.gain.linearRampToValueAtTime(v, t + 0.004); kg.gain.exponentialRampToValueAtTime(0.001, t + (hi ? 0.3 : 0.11));
+      k.connect(kg); kg.connect(master); k.start(t); k.stop(t + 0.32);
+      t += [0.055, 0.075, 0.04, 0.11, 0.06, 0.09][ (Math.random()*6)|0 ]; } }
+  let grindS = null, grindG = null, grindF = null, grindT = 0;
+  function grind(da){ if (!on) return; const now = ac.currentTime;                                                                       // stone on stone: a low rasp that lives only while you turn
+    if (!grindS){ grindS = ac.createBufferSource(); grindS.buffer = noiseBuf(); grindS.loop = true; grindF = ac.createBiquadFilter(); grindF.type = 'bandpass'; grindF.frequency.value = 180; grindF.Q.value = 2.5;
+      const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 700; grindG = ac.createGain(); grindG.gain.value = 0; grindS.connect(grindF); grindF.connect(lp); lp.connect(grindG); grindG.connect(master); grindS.start(); }
+    const v = Math.min(0.85, da*5); grindG.gain.cancelScheduledValues(now); grindG.gain.setTargetAtTime(v, now, 0.03); grindG.gain.setTargetAtTime(0, now + 0.14, 0.1);
+    grindF.frequency.setTargetAtTime(90 + Math.random()*70, now, 0.05);
+    if (Math.random() < da*2){ const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(55 + Math.random()*20, now); o.frequency.exponentialRampToValueAtTime(30, now + 0.15);   // and the weight of it, catching
+      g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(0.3, now + 0.01); g.gain.exponentialRampToValueAtTime(0.001, now + 0.3); o.connect(g); g.connect(master); o.start(now); o.stop(now + 0.35); } }
+  function clank(){ if (!on) return; const now = ac.currentTime;                                                                          // an iron pin dropping into the next notch
+    const o = ac.createOscillator(), g = ac.createGain(); o.type = 'square'; o.frequency.setValueAtTime(640, now); o.frequency.exponentialRampToValueAtTime(210, now + 0.05);
+    const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 900; f.Q.value = 3; g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(0.4, now + 0.003); g.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    o.connect(f); f.connect(g); g.connect(master); o.start(now); o.stop(now + 0.2);
+    const th = ac.createOscillator(), tg = ac.createGain(); th.frequency.setValueAtTime(70, now); th.frequency.exponentialRampToValueAtTime(40, now + 0.1); tg.gain.setValueAtTime(0, now); tg.gain.linearRampToValueAtTime(0.35, now + 0.004); tg.gain.exponentialRampToValueAtTime(0.001, now + 0.3);   // and the weight of the stone behind it
+    th.connect(tg); tg.connect(master); th.start(now); th.stop(now + 0.32); }
+  function grunt(){ if (!on) return; const now = ac.currentTime, n = 2 + (Math.random()*2|0);                                              // a low mumble, two or three syllables, no words in it
+    const o = ac.createOscillator(), g = ac.createGain(), f1 = ac.createBiquadFilter(), f2 = ac.createBiquadFilter(); o.type = 'sawtooth'; f1.type = 'bandpass'; f1.frequency.value = 420; f1.Q.value = 2; f2.type = 'lowpass'; f2.frequency.value = 700;
+    let t = now; for (let i = 0; i < n; i++){ const len = 0.1 + Math.random()*0.12, f = 88 + Math.random()*22; o.frequency.setValueAtTime(f, t); o.frequency.linearRampToValueAtTime(f*(0.92 + Math.random()*0.12), t + len);
+      g.gain.setValueAtTime(0.001, t); g.gain.exponentialRampToValueAtTime(0.55 - i*0.08, t + 0.03); g.gain.exponentialRampToValueAtTime(0.001, t + len); f1.frequency.setValueAtTime(380 + Math.random()*260, t); t += len + 0.03; }
+    o.connect(f1); f1.connect(f2); f2.connect(g); g.connect(master); o.start(now); o.stop(t + 0.05); }
+  function slide(){ if (!on) return; const now = ac.currentTime;                                                                         // a capstone dragged aside: a long stone scrape, then it seats with a knock
+    const n = ac.createBufferSource(); n.buffer = noiseBuf(); const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.setValueAtTime(140, now); f.frequency.linearRampToValueAtTime(260, now + 0.7); f.Q.value = 2;
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900; const g = ac.createGain(); g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(0.5, now + 0.08); g.gain.setTargetAtTime(0.35, now + 0.1, 0.3); g.gain.setTargetAtTime(0, now + 0.75, 0.06);
+    n.connect(f); f.connect(lp); lp.connect(g); g.connect(master); n.start(now); n.stop(now + 1.2);
+    for (let i = 0; i < 5; i++){ const t = now + 0.1 + i*0.13 + Math.random()*0.05, o = ac.createOscillator(), og = ac.createGain(); o.frequency.setValueAtTime(70 + Math.random()*30, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.08);   // it judders as it goes
+      og.gain.setValueAtTime(0, t); og.gain.linearRampToValueAtTime(0.18, t + 0.005); og.gain.exponentialRampToValueAtTime(0.001, t + 0.12); o.connect(og); og.connect(master); o.start(t); o.stop(t + 0.15); }
+    const th = ac.createOscillator(), tg = ac.createGain(); th.frequency.setValueAtTime(60, now + 0.85); th.frequency.exponentialRampToValueAtTime(32, now + 1.0); tg.gain.setValueAtTime(0, now + 0.85); tg.gain.linearRampToValueAtTime(0.45, now + 0.855); tg.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+    th.connect(tg); tg.connect(master); th.start(now + 0.85); th.stop(now + 1.25); }
+  function ignite(){ if (!on) return; const now = ac.currentTime;                                                                        // the fire taking: a rush of air, then a crackle that settles
+    const n = ac.createBufferSource(); n.buffer = noiseBuf(); const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.setValueAtTime(300, now); f.frequency.exponentialRampToValueAtTime(2200, now + 0.25); f.frequency.exponentialRampToValueAtTime(700, now + 1.2); f.Q.value = 1.2;
+    const g = ac.createGain(); g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(0.5, now + 0.12); g.gain.setTargetAtTime(0.12, now + 0.3, 0.5); g.gain.setTargetAtTime(0, now + 2.0, 0.5); n.connect(f); f.connect(g); g.connect(master); n.start(now); n.stop(now + 3);
+    for (let i = 0; i < 18; i++){ const t = now + 0.2 + Math.random()*2.0, c = ac.createBufferSource(); c.buffer = noiseBuf(); const cf = ac.createBiquadFilter(); cf.type = 'highpass'; cf.frequency.value = 2500 + Math.random()*2000;   // sparks and pops
+      const cg = ac.createGain(); cg.gain.setValueAtTime(0, t); cg.gain.linearRampToValueAtTime(0.08 + Math.random()*0.1, t + 0.003); cg.gain.exponentialRampToValueAtTime(0.001, t + 0.02 + Math.random()*0.03); c.connect(cf); cf.connect(cg); cg.connect(master); c.start(t); c.stop(t + 0.08); }
+    const o = ac.createOscillator(), og = ac.createGain(); o.frequency.setValueAtTime(90, now); o.frequency.exponentialRampToValueAtTime(45, now + 0.4); og.gain.setValueAtTime(0, now); og.gain.linearRampToValueAtTime(0.3, now + 0.05); og.gain.exponentialRampToValueAtTime(0.001, now + 0.6); o.connect(og); og.connect(master); o.start(now); o.stop(now + 0.7); }   // the low breath of it
+  function howl(dist){ if (!on) return; const now = ac.currentTime, g = Math.max(0.15, 1 - dist/900), o = ac.createOscillator(), v = ac.createOscillator(), vg = ac.createGain(), f = ac.createBiquadFilter(), gg = ac.createGain();   // a howl, far off: a long rise, a hold, a fall
+    o.type = 'sawtooth'; f.type = 'bandpass'; f.frequency.value = 700; f.Q.value = 2.2; v.frequency.value = 5.5; vg.gain.value = 6; v.connect(vg); vg.connect(o.frequency); v.start();
+    const base = 300 + Math.random()*90, len = 1.6 + Math.random()*1.2;
+    o.frequency.setValueAtTime(base*0.7, now); o.frequency.exponentialRampToValueAtTime(base*1.5, now + len*0.35); o.frequency.setTargetAtTime(base*1.45, now + len*0.35, 0.4); o.frequency.exponentialRampToValueAtTime(base*0.9, now + len);
+    gg.gain.setValueAtTime(0.001, now); gg.gain.exponentialRampToValueAtTime(0.09*g, now + len*0.3); gg.gain.setTargetAtTime(0.07*g, now + len*0.4, 0.3); gg.gain.exponentialRampToValueAtTime(0.001, now + len + 0.2);
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1400; o.connect(f); f.connect(lp); lp.connect(gg); gg.connect(master); o.start(now); o.stop(now + len + 0.3);
+    if (Math.random() < 0.5) setTimeout(() => howl(dist + 300), 900 + Math.random()*1200); }                                                                                     // and another answers it
+  function bark(dist){ if (!on) return; const now = ac.currentTime, g = Math.max(0.1, 1 - dist/220), n = 1 + (Math.random()*3|0);                                                     // barks: short, hard, in twos and threes
+    for (let i = 0; i < n; i++){ const t = now + i*(0.14 + Math.random()*0.08), o = ac.createOscillator(), f = ac.createBiquadFilter(), gg = ac.createGain(); o.type = 'sawtooth'; f.type = 'bandpass'; f.frequency.value = 900 + Math.random()*300; f.Q.value = 1.6;
+      o.frequency.setValueAtTime(260, t); o.frequency.exponentialRampToValueAtTime(420, t + 0.03); o.frequency.exponentialRampToValueAtTime(240, t + 0.11);
+      gg.gain.setValueAtTime(0.001, t); gg.gain.exponentialRampToValueAtTime(0.22*g, t + 0.015); gg.gain.exponentialRampToValueAtTime(0.001, t + 0.13); o.connect(f); f.connect(gg); gg.connect(master); o.start(t); o.stop(t + 0.15); } }
+  // the watchers, near: clicks like a jaw that has too many joints, thumps like something big shifting its weight, a tone that is not quite there
+  let wNext = 0;
+  function watcher(dist, form){ if (!on) return; const now = ac.currentTime; if (now < wNext) return; const g = Math.max(0, 1 - dist/200); if (g <= 0) return; wNext = now + 0.25 + Math.random()*1.4;
+    const kind = Math.random();
+    if (kind < 0.45){ const n = 3 + (Math.random()*7|0); let t = now; for (let i = 0; i < n; i++){ const o = ac.createOscillator(), gg = ac.createGain(); o.type = 'square'; o.frequency.value = 1400 + Math.random()*2600;          // clicks, accelerating or slowing
+        gg.gain.setValueAtTime(0.06*g, t); gg.gain.exponentialRampToValueAtTime(0.001, t + 0.012); o.connect(gg); gg.connect(master); o.start(t); o.stop(t + 0.015); t += 0.03 + (Math.random() < 0.5 ? i*0.02 : (n-i)*0.02); } }
+    else if (kind < 0.8){ const o = ac.createOscillator(), gg = ac.createGain(); o.frequency.setValueAtTime(48 + Math.random()*20, now); o.frequency.exponentialRampToValueAtTime(28, now + 0.35);                                   // a thump, felt in the ground
+      gg.gain.setValueAtTime(0, now); gg.gain.linearRampToValueAtTime(0.4*g, now + 0.01); gg.gain.exponentialRampToValueAtTime(0.001, now + 0.5); o.connect(gg); gg.connect(master); o.start(now); o.stop(now + 0.55); }
+    else { const o = ac.createOscillator(), o2 = ac.createOscillator(), gg = ac.createGain(), f = ac.createBiquadFilter(); o.type = 'sine'; o2.type = 'sine'; const fq = 160 + Math.random()*120; o.frequency.value = fq; o2.frequency.value = fq*1.013;   // a tone that beats against itself, then bends away
+      o.frequency.linearRampToValueAtTime(fq*(0.7 + Math.random()*0.6), now + 1.2); f.type = 'lowpass'; f.frequency.value = 600; gg.gain.setValueAtTime(0.001, now); gg.gain.exponentialRampToValueAtTime(0.07*g, now + 0.3); gg.gain.exponentialRampToValueAtTime(0.001, now + 1.4);
+      o.connect(f); o2.connect(f); f.connect(gg); gg.connect(master); o.start(now); o2.start(now); o.stop(now + 1.5); o2.stop(now + 1.5); } }
+  function melody(){ const ph = PHRASES[ORDER[0]]; return ph.slice(0, 5).map(([semi]) => { const d = snap(semi); const i = SCALE.indexOf(((d % 12) + 12) % 12); return i < 0 ? 0 : i; }); }   // the first phrase of tonight's song, as scale steps
+  function tone(i, v = 0.3){ if (!on) return; const now = ac.currentTime, f = 220 * Math.pow(2, (SCALE[i] + KEY)/12), o = ac.createOscillator(), o2 = ac.createOscillator(), g = ac.createGain();   // a pure note, with a fifth ghosting under it
+    o.frequency.value = f; o2.frequency.value = f*1.5; const g2 = ac.createGain(); g2.gain.value = 0.15; g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(v, now + 0.02); g.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+    o.connect(g); o2.connect(g2); g2.connect(g); g.connect(master); o.start(now); o2.start(now); o.stop(now + 1.3); o2.stop(now + 1.3); }
+  let resO = null, resG = null;
+  function resonate(still){ if (!on) return; if (!resO){ resO = ac.createOscillator(); resO.type = 'sine'; resO.frequency.value = 110 * Math.pow(2, KEY/12); const r2 = ac.createOscillator(); r2.type = 'sine'; r2.frequency.value = 110 * Math.pow(2, KEY/12) * 1.502;   // the resonator: a low pure hum, a fifth over it, beating slightly
+      resG = ac.createGain(); resG.gain.value = 0; const g2 = ac.createGain(); g2.gain.value = 0.3; resO.connect(resG); r2.connect(g2); g2.connect(resG); resG.connect(master); resO.start(); r2.start(); }
+    resG.gain.setTargetAtTime(still ? 0.14 : 0.04, ac.currentTime, still ? 1.2 : 0.4); }
+  function resonateOff(){ if (resG) resG.gain.setTargetAtTime(0, ac.currentTime, 0.5); }
+  let pureOn = false;
+  function pure(v){ pureOn = v; }                                                                                                   // after the light stands up, his song is sung in pure tone
+  function assemble(){ if (!on) return; const now = ac.currentTime;                                                                   // the low hum under the assembly, and the drum leaning in
+    const o = ac.createOscillator(), o2 = ac.createOscillator(), g = ac.createGain(); o.type = 'sine'; o2.type = 'sine'; o.frequency.value = 55 * Math.pow(2, KEY/12); o2.frequency.value = 55 * Math.pow(2, KEY/12) * 1.01;
+    g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(0.35, now + 3); g.gain.setTargetAtTime(0.25, now + 4, 2); g.gain.setTargetAtTime(0, now + 11, 1.5); o.connect(g); o2.connect(g); g.connect(master); o.start(now); o2.start(now); o.stop(now + 15); o2.stop(now + 15);
+    if (drumBus){ drumBus.gain.setTargetAtTime(2.2, now, 2); drumBus.gain.setTargetAtTime(1.35, now + 9, 2); } }
+  function chime(i, v = 0.35){ if (!on) return; const now = ac.currentTime, f = [392, 523.3, 659.3][i] || 330;                 // three bells, a fourth apart-ish
+    [1, 2.76, 5.4].forEach((m, k) => { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = f*m; g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(v/(k+1), now + 0.005); g.gain.exponentialRampToValueAtTime(0.001, now + 1.6/(k+1)); o.connect(g); g.connect(master); o.start(now); o.stop(now + 1.7); }); }
+  return { start, play, wake, tick, stepSound, windPower, ceremonyTick, beatPhase, shamanQuiet, pickup, chime, silence, grind, clank, grunt, slide, ignite, howl, bark, watcher, eat, melody, tone, resonate, resonateOff, pure, assemble };
+})();
+
+// ---------- update ----------
+function update(){
+  frame++;
+  if (!started && frame % 30 === 0) audio.tick(frame/60, false, false, 0, false, false);
+  if (talk.lines.length && --talk.t <= 0){ say(talk.lines.shift(), 320); talk.t = 300; }
+  if (msgT > 0 && --msgT === 0) document.getElementById('msg').style.opacity = 0;
+  if (!started || won) return;
+  if (dead > 0){ if (--dead === 0){ player.x = VX*T; player.y = (VY+2)*T; player.oil = 100; player.lit = true; wolves.length = 0; say('You wake in the village.'); } return; }
+
+  if (closeup.on){ updateCloseup(); return; }
+  if (inside.on){ updateInside(); return; }
+  let mx = jx, my = jy;
+  if (keys['w']||keys['arrowup']) my = -1; if (keys['s']||keys['arrowdown']) my = 1;
+  if (keys['a']||keys['arrowleft']) mx = -1; if (keys['d']||keys['arrowright']) mx = 1;
+  const len = Math.hypot(mx,my); if (len > 1){ mx/=len; my/=len; }
+  const here = terrain(Math.floor(player.x/T), Math.floor((player.y+2)/T));   // sampled at the feet, same point the collision uses
+  const fk = Math.floor(player.x/T)+','+Math.floor((player.y+2)/T), fa = fire.has(fk) ? frame - fire.get(fk) : -1;
+  const base = here === 'forest' && fa > 400 ? SPEED.snow : (SPEED[here] || 0.5);   // never zero: if you are somehow standing on it, you can still step off                       // burnt ground walks like open snow
+  // stamina: walking costs a little, hauling the chain costs a lot, standing still gives it back
+  const trying = Math.hypot(mx,my) > 0.1;
+  if (player.winded && player.stam >= 30){ player.winded = false; say('You get your breath back.', 90); }
+  const DRAIN = { trail: 0.10, pier: 0.08, obsidian: 0.10, bank: 0.16, ice: 0.15, snow: 0.20, forest: 0.28 };          // a beacon's stretch of trail costs about half the bar          // a beacon's worth of trail costs about 80% of the bar
+  if (player.surge > 0) player.surge--;
+  if (trying && !player.winded){ player.stam = Math.max(0, player.stam - (DRAIN[here] ?? 0.2) * (player.shard && burden.taut ? 1.8 : 1) * (player.surge > 0 ? 0.4 : 1) * (world.mushroom ? 0.7 : 1));
+    if (player.stam <= 0){ player.winded = true; say(player.shard ? 'The chain wins. You stop.' : 'You have to stop.', 150); } }
+  else { const inLight = beacons.some(b => b.lit && Math.hypot(b.x-player.x, b.y-player.y) < 70);
+    player.stam = Math.min(player.stamMax, player.stam + (inLight ? 0.6 : 0.2)); }
+  if (player.winded){ mx = 0; my = 0; }
+  const tired = 0.45 + 0.55 * Math.min(1, player.stam/60);                                                // the last stretch of the bar is where it slows
+  const sp = base * 0.9 * (player.shard && burden.taut ? 0.6 : 1) * tired * (player.surge > 0 ? 1.6 : 1);
+  const nx = player.x + mx*sp, ny = player.y + my*sp;
+  const free = (px, py) => !solid(px, py+2) && !blocked(px, py);
+  if (free(nx, player.y)) player.x = nx;
+  else if (mx){ for (const k of [4, -4, 8, -8]) if (free(nx, player.y+k)){ player.y += Math.sign(k)*Math.min(Math.abs(k), sp); break; } }   // slide round the corner instead of sticking
+  if (my && free(player.x, player.y + my*sp)) player.y += my*sp;
+  else if (my){ for (const k of [4, -4, 8, -8]) if (free(player.x+k, ny)){ player.x += Math.sign(k)*Math.min(Math.abs(k), sp); break; } }
+  if (player.shard){ ptrail.unshift([player.x, player.y]); if (ptrail.length > 80) ptrail.pop();
+    let dx = player.x-burden.x, dy = player.y-burden.y; const d = Math.hypot(dx,dy);
+    burden.taut = d > CHAIN - 0.5;
+    if (d > CHAIN){ dx/=d; dy/=d; const bx = player.x - dx*CHAIN, by = player.y - dy*CHAIN;
+      let ok = !solid(bx, by) && !blocked(bx, by), fx = bx, fy = by;
+      if (!ok && solid(bx, by)){ for (let i = 0; i < ptrail.length; i++){ const [qx, qy] = ptrail[i]; if (Math.hypot(player.x-qx, player.y-qy) <= CHAIN && !blocked(qx, qy)){ fx = qx; fy = qy; ok = true; break; } } }   // water or rock: drag it along the path you walked
+      if (ok){ burden.x = fx; burden.y = fy;
+        if (frame % 3 === 0){ burden.trail.push([fx, fy]); if (burden.trail.length > 90) burden.trail.shift(); } }
+      else { player.x = burden.x + dx*CHAIN; player.y = burden.y + dy*CHAIN; } }                                   // a building or a stone: snagged
+    if (world.after){ const btx = Math.floor(burden.x/T), bty = Math.floor(burden.y/T);            // the obelisk sets the woods alight in a circle around it
+      if (frame % 4 === 0) for (let dy = -7; dy <= 7; dy++) for (let dx = -7; dx <= 7; dx++) if (dx*dx+dy*dy <= 44) ignite(btx+dx, bty+dy);
+      if (frame % 24 === 0) for (const [k, f0] of fire){ if (frame - f0 > 720) continue; const [tx, ty] = k.split(',').map(Number), r = hash(tx*3+frame, ty*7);
+        if (r > 0.82) ignite(tx + Math.round(hash(tx, frame)*2-1), ty + Math.round(hash(frame, ty)*2-1)); } } }   // and it creeps outward on its own
+  if (mx) player.face = mx > 0 ? 1 : -1;
+  player.moving = len > 0.1 && !player.winded;
+  if (player.moving){ const before = Math.floor(player.step)%4; player.step += 0.11 * sp / 0.72; const after = Math.floor(player.step)%4;
+    if (before !== after && (after === 0 || after === 2)){ audio.stepSound(here);
+      if (here === 'snow' || here === 'ice' || here === 'bank' || here === 'forest'){ const side = after === 0 ? 1 : -1;                         // left foot, right foot, either side of the line he walks
+        prints.push([player.x + (mx !== 0 ? 0 : side*1.5) - (my !== 0 ? 0 : 0), player.y + 2 + (my !== 0 ? 0 : side*1) + (mx !== 0 ? 0 : 0), frame, player.face, here]); if (prints.length > 260) prints.shift(); } } }
+
+  // oil
+  const nearLit = beacons.some(b => b.lit && Math.hypot(b.x-player.x, b.y-player.y) < 70);
+  if (player.lit && !nearLit) player.oil = Math.max(0, player.oil - 0.015);
+  if (player.oil <= 0) player.lit = false;
+  if (Math.hypot(player.x-VX*T, player.y-VY*T) < 60 && player.oil < 100) player.oil = Math.min(100, player.oil + 0.15); // village well
+
+  caches.forEach(c => { if (!c.taken && Math.hypot(c.x-player.x, c.y-player.y) < 6){ c.taken = true; player.oil = Math.min(100, player.oil+30); audio.pickup(); say(c.fallen ? ['Oil. He will not miss it.', 'Oil. They got this far.', 'Oil, still half full. They stopped anyway.', 'Oil. You do not look at the face.'][c.pose] : 'Oil found.', c.fallen ? 160 : 90); } });
+  beacons.forEach(b => { if (!b.lit && Math.hypot(b.x-player.x, b.y-player.y) < 10){
+    if (player.oil >= 25){ if (frame - (b.backed || -999) > 90){ player.y = b.y + 12; openCloseup('beacon', b); } }
+    else if (frame % 60 === 0) say('The beacon needs 25 oil.', 90); } });
+  if (!player.relic && Math.abs(player.x-TOWER.tx*T) < 9 && player.y < TOWER.ty*T + 4 && player.y > TOWER.ty*T-12){ player.entered = true; enterTower('tower'); return; }
+  if (!player.relic && !world.relics[0] && frame % 120 === 0 && Math.hypot(player.x-TOWER.tx*T, player.y-TOWER.ty*T) < 60) say('A doorway at the foot of the tower. Something burns inside it.', 150);
+  if (!player.relic && world.map && !world.relics[1] && Math.abs(player.x-CIST.tx*T) < 9 && player.y < CIST.ty*T + 4 && player.y > CIST.ty*T-12){ enterTower('cistern'); return; }
+  if (!player.relic && world.map && !world.relics[2] && Math.abs(player.x-BARROW.tx*T) < 9 && player.y < BARROW.ty*T + 4 && player.y > BARROW.ty*T-12){ enterTower('barrow'); return; }
+  if (!world.mushroom && !closeup.on && frame - (closeup.wellBacked || -999) > 90 && Math.hypot(player.x-VX*T, player.y-VY*T-6) < 7){ player.y = VY*T + 12; openCloseup('well', null); }
+  if (!world.map && ((Math.abs(player.x-CIST.tx*T) < 10 && Math.abs(player.y-CIST.ty*T) < 10) || (Math.abs(player.x-BARROW.tx*T) < 10 && Math.abs(player.y-BARROW.ty*T) < 10)) && frame % 90 === 0) say('Sealed. Stone over the door. Not yet.', 120);
+
+  const talking = closeup.on && (closeup.kind === 'talk' || closeup.kind === 'altar'); if (frame % 30 === 0){ audio.shamanQuiet(talking || world.silent); audio.silence(world.silent); }
+  if (!inside.on) audio.ceremonyTick(Math.hypot(player.x-SHAMAN.x+34, player.y-SHAMAN.y-6));
+  if (!world.met && Math.hypot(player.x-SHAMAN.x+34, player.y-SHAMAN.y-6) < 20){ world.met = true; player.y = SHAMAN.y + 14;
+    openCloseup('talk', null); closeup.lines = ['He stops. He lights his lantern and looks at you a long time.',
+      'The wolves keep to the edge of your lantern. Past the wolves are the Watchers. They wear whatever they last touched. Do not let it be you.',
+      'Fire is the one thing they stop for. Five beacons stand on the road east. Light them by hand.',
+      'At the end of the road is a tower of black glass. Inside it, a stone that belongs here. Bring it to me.',
+      'Go. I will keep singing, so you can find the way back.'];
+    say(closeup.lines.shift(), 9999); }
+  if (player.relic && !closeup.on && frame % 120 === 0 && Math.hypot(player.x-SHAMAN.x+34, player.y-SHAMAN.y-6) < 70) say('Bring it to him.', 100);
+  if (player.relic && !closeup.on && Math.hypot(player.x-SHAMAN.x+34, player.y-SHAMAN.y-6) < 24){ player.y = SHAMAN.y + 16; openCloseup('altar', null); say('The stone table. He looks at what you are carrying, then at the first socket.', 400); }
+  if (world.ended && frame - world.endT > 600 && !document.getElementById('title').classList.contains('back')){ const t = document.getElementById('title'); t.querySelector('h1').textContent = 'THE VILLAGE KEEPS ITS LIGHT'; const br = document.getElementById('brief'); br.innerHTML = '<p>tap to begin again</p>'; br.style.display = ''; t.classList.add('back'); t.style.opacity = 1; won = true; }
+  if (doom > 0){ doom++;
+    if (doom === 150){ player.x = SHAMAN.x - 34; player.y = SHAMAN.y + 18; burden.x = player.x - 8; burden.y = player.y + 4; burden.trail.length = 0;   // you wake by his fire. he does not ask.
+      player.lit = false; player.oil = Math.max(player.oil, 20); player.stam = 40; player.winded = false; player.stamMax = Math.max(30, player.stamMax - 6);
+      others.length = 0; wolves.length = 0; hollows.length = 0; player.rise = 130; player.face = 1; say('You wake on the ground by his fire. He does not ask.', 400); }
+    if (doom > 260) doom = 0; return; }
+  if (player.rise > 0){ player.rise--; player.moving = false; return; }                                                                            // getting up takes a moment
+  if (world.after && !world.frozen && player.relic !== 'bell'){ updateHollows(); if (frame % 30 === 0) audio.tick(frame/60, here === 'forest', false, Math.min(1, Math.max(0, (TOWER.tx - player.x/T)/(TOWER.tx-40))), false, true); return; }
+  // wolves: circle the light, close in when it is out
+  const lampR = player.lit ? 30 + player.oil*0.12 : 0;
+  if (player.x > 34*T && wolves.length < (world.frozen ? 6 : 4) && frame % (world.frozen ? 200 : 300) === 0){
+    const a = hash(frame, 3)*Math.PI*2, d = 170;
+    const sx = player.x + Math.cos(a)*d, sy = player.y + Math.sin(a)*d;
+    if (!beacons.some(b => b.lit && Math.hypot(b.x-sx, b.y-sy) < 100) && Math.hypot(SHAMAN.x-sx, SHAMAN.y-sy) > 170 && !solid(sx,sy) && sx > 34*T)
+      wolves.push({ x: sx, y: sy, face: 1, spin: hash(frame,9) > 0.5 ? 1 : -1, step: 0 });
+  }
+  let woodsNear = here === 'forest';
+  if (player.x > 60*T && frame % 900 === 0 && Math.random() < 0.6 && !world.silent) audio.howl(600 + Math.random()*500);   // somewhere east, something calling
+  wolves.forEach(s => {
+    let dx = player.x-s.x, dy = player.y-s.y; const d = Math.hypot(dx,dy) || 1; dx/=d; dy/=d;
+    if (!s.seen && d < 150){ s.seen = true; audio.bark(d); } if (s.seen && d < 60 && frame % 150 === 0 && Math.random() < 0.5) audio.bark(d);
+    let v = 0.28, cx = 0, cy = 0;
+    if (d < lampR + 6){ v = -0.35; cx = -dy*s.spin*0.3; cy = dx*s.spin*0.3; }
+    else if (d < lampR + 14){ v = 0.05; cx = -dy*s.spin*0.3; cy = dx*s.spin*0.3; }
+    beacons.forEach(b => { if (b.lit){ const bd = Math.hypot(b.x-s.x, b.y-s.y); if (bd < 100){ dx = (s.x-b.x)/bd; dy = (s.y-b.y)/bd; v = 0.5; cx = cy = 0; } } });
+    { const sd = Math.hypot(SHAMAN.x-34-s.x, SHAMAN.y-s.y); if (sd < 150){ dx = (s.x-SHAMAN.x+34)/sd; dy = (s.y-SHAMAN.y)/sd; v = 0.5; cx = cy = 0; } }   // the drum and the glow: they will not come near him
+    const wt = terrain(Math.floor(s.x/T), Math.floor(s.y/T)); const wm = wt === 'forest' ? 0.7 : SPEED[wt] === 0 ? 0 : 1;
+    const mxx = (dx*v + cx)*wm, myy = (dy*v + cy)*wm;
+    if (!solid(s.x+mxx, s.y)) s.x += mxx; if (!solid(s.x, s.y+myy)) s.y += myy;
+    if (Math.abs(mxx) > 0.02) s.face = mxx > 0 ? 1 : -1;
+    s.step += Math.hypot(mxx,myy)*0.5;
+    if (d < 7 && player.bite <= 0){ player.bite = 100; player.stamMax = Math.max(30, player.stamMax - 8); player.stam = Math.min(player.stam, player.stamMax);
+      player.x += dx*5; player.y += dy*5; say('A wolf bites. Something in you is smaller now.', 120); }
+  });
+  if (player.bite > 0) player.bite--;
+  updateOthers(here);
+  for (let i = wolves.length-1; i >= 0; i--) if (Math.hypot(wolves[i].x-player.x, wolves[i].y-player.y) > 260) wolves.splice(i,1);
+  if (frame % 30 === 0) audio.tick(frame/60, woodsNear, wolves.length > 0, Math.min(1, Math.max(0, (player.x/T - 40)/(TOWER.tx-40))));
+}
+
+function updateInside(){
+  let mx = jx, my = jy;
+  if (keys['w']||keys['arrowup']) my = -1; if (keys['s']||keys['arrowdown']) my = 1;
+  if (keys['a']||keys['arrowleft']) mx = -1; if (keys['d']||keys['arrowright']) mx = 1;
+  const len = Math.hypot(mx,my); if (len > 1){ mx/=len; my/=len; }
+  const here = itile(inside.x, inside.y); const sp = here === 'S' ? 0.42 : here === 'W' ? 0.3 : 0.62;
+  if (here === 'W' && player.lit) player.oil = Math.max(0, player.oil - 0.02);
+  const nx = inside.x + mx*sp, ny = inside.y + my*sp;
+  if (itile(nx, inside.y) !== '#') inside.x = nx; if (itile(inside.x, ny) !== '#') inside.y = ny;
+  if (mx) player.face = mx > 0 ? 1 : -1;
+  player.moving = len > 0.1;
+  if (player.moving){ const before = Math.floor(player.step)%4; player.step += 0.11 * sp / 0.72; const after = Math.floor(player.step)%4;
+    if (before !== after && (after === 0 || after === 2)) audio.stepSound(here === 'S' ? 'stair' : here === 'W' ? 'wet' : 'stone'); }   // stone underfoot: low, solid, a little room around it
+  if (player.lit) player.oil = Math.max(0, player.oil - 0.01); if (player.oil <= 0) player.lit = false;
+  if (frame % 30 === 0) audio.tick(frame/60, false, false, 1, true);
+  const t = itile(inside.x, inside.y);
+  if (inside.cool > 0) inside.cool--;
+  else if (/[a-e]/.test(t)){ const pair = seams[t], cx = Math.floor(inside.x/IT), cy = Math.floor(inside.y/IT);
+    const other = pair.find(([x,y]) => x !== cx || y !== cy); if (other){ inside.x = other[0]*IT + (inside.x - cx*IT); inside.y = other[1]*IT + (inside.y - cy*IT); inside.cool = 40; audio.stepSound('ice'); } }
+  if (t === 'O' && !player.relic && frame - (closeup.obBacked || -999) > 90) openCloseup(inside.site === 'tower' ? 'obelisk' : inside.site === 'cistern' ? 'lens' : 'bell', null);
+  if (t !== 'X') inside.left = true; else if (inside.left) leaveTower();
+}
+// hollows: they want the light. dark is safe. they move in jerks.
+// the others: past the wolves, deep in the woods. light means nothing to them. only beacons hold them. no one has lived to say.
+function updateOthers(here){
+  const deep = player.relic === 'bell' ? true : (player.x > 130*T && here === 'forest');
+  if (player.relic === 'bell' && others.length){ const pull = 1 + Math.min(0.8, (player.stillT || 0)/300); others.forEach(o => { o.dx *= pull; o.dy *= pull; }); }   // the longer you stand, the surer they are of where you are
+  if (deep && others.length < (player.relic === 'bell' ? 3 : 2) && frame % (player.relic === 'bell' ? 240 : 420) === 0 && !beacons.some(b => b.lit && Math.hypot(b.x-player.x, b.y-player.y) < 120)){
+    const a = hash(frame, 77)*Math.PI*2, sx = player.x + Math.cos(a)*210, sy = player.y + Math.sin(a)*210;
+    if (terrain(Math.floor(sx/T), Math.floor(sy/T)) === 'forest' || player.relic === 'bell') others.push({ x: sx, y: sy, t: hash(frame,5)*300|0, dx: 0, dy: 0 }); }
+  others.forEach(o => { o.t++; const form = Math.floor(o.t/180)%3;                                                     // man-like, tentacled, unmade
+    let dx = player.x-o.x, dy = player.y-o.y; const d = Math.hypot(dx,dy) || 1; dx/=d; dy/=d;
+    if (d < 200) audio.watcher(d, form);
+    let v = deep ? [0.22, 0.14, 0.5][form] : -0.1;
+    beacons.forEach(b => { if (b.lit){ const bd = Math.hypot(b.x-o.x, b.y-o.y); if (bd < 110){ dx = (o.x-b.x)/bd; dy = (o.y-b.y)/bd; v = 0.4; } } });
+    o.dx = o.dx*0.9 + dx*v*0.1; o.dy = o.dy*0.9 + dy*v*0.1;
+    if (form === 2){ o.x += Math.sin(o.t*0.7)*0.6; o.y += Math.cos(o.t*0.5)*0.6; }                                    // unmade: it drifts
+    if (world.after && frame % 10 === 0 && !(o.burning && frame - o.burning < 1500)){ const otx = Math.floor(o.x/T), oty = Math.floor(o.y/T);       // it walks through the fire and takes some with it
+      for (let dy = -1; dy <= 1 && !o.burning; dy++) for (let dx = -1; dx <= 1; dx++){ const f0 = fire.get((otx+dx)+','+(oty+dy)); if (f0 !== undefined && frame - f0 < 720){ o.burning = frame; break; } } }
+    if (o.burning && frame - o.burning < 1500){ o.dx *= 1.04; o.dy *= 1.04; }                                            // it does not mind. if anything it likes it
+    const t = terrain(Math.floor((o.x+o.dx)/T), Math.floor((o.y+o.dy)/T)); if (t === 'forest' || t === 'snow' || t === 'trail'){ o.x += o.dx; o.y += o.dy; }
+    if (d < 7 && doom === 0 && !world.ended){ doom = 1; say('No one has lived to say.', 9999); } });
+  for (let i = others.length-1; i >= 0; i--) if (Math.hypot(others[i].x-player.x, others[i].y-player.y) > 320) others.splice(i,1);
+}
+function updateHollows(){
+  if (player.x > 34*T && hollows.length < 5 && frame % 240 === 0){
+    const a = hash(frame, 5)*Math.PI*2, d = 190, sx = player.x + Math.cos(a)*d, sy = player.y + Math.sin(a)*d;
+    if (!solid(sx,sy) && sx > 34*T) hollows.push({ x: sx, y: sy, face: 1, t: 0, dx: 0, dy: 0, step: 0 }); }
+  hollows.forEach(h => { h.t++;
+    if (h.t % 48 === 0){ const dx = player.x-h.x, dy = player.y-h.y, d = Math.hypot(dx,dy) || 1;
+      if (player.lit){ h.dx = dx/d; h.dy = dy/d; } else { const a = hash(h.t, h.x|0)*Math.PI*2; h.dx = Math.cos(a)*0.4; h.dy = Math.sin(a)*0.4; if (d < 40){ h.dx = -dx/d; h.dy = -dy/d; } } }
+    const burst = (h.t % 48) < 22;                                                         // it creeps, halts, creeps
+    beacons.forEach(b => { if (b.lit){ const bd = Math.hypot(b.x-h.x, b.y-h.y); if (bd < 78){ h.dx = (h.x-b.x)/bd; h.dy = (h.y-b.y)/bd; } } });   // they will not enter a beacon's light
+    if (burst){ const v = 0.85 + Math.sin(h.t*0.6)*0.3; h.x += Math.sin(h.t*0.23)*0.25; if (!solid(h.x+h.dx*v, h.y)) h.x += h.dx*v; if (!solid(h.x, h.y+h.dy*v)) h.y += h.dy*v; h.step += 0.5; if (Math.abs(h.dx) > 0.1) h.face = h.dx > 0 ? 1 : -1; }
+    if (player.lit && Math.hypot(h.x-player.x, h.y-player.y) < 8) player.oil = Math.max(0, player.oil - 0.5); });
+  if (player.oil <= 0) player.lit = false;
+  if (player.shard) beacons.forEach(b => { if (b.lit && !b.surged && Math.hypot(b.x-player.x, b.y-player.y) < 70){ b.surged = true; player.surge = 600; player.stam = player.stamMax;
+    say('The beacon knows what you carry. It gives you its speed.', 240); } });
+  if (beacons.some(b => b.lit && Math.hypot(b.x-player.x, b.y-player.y) < 70)){ if (player.oil < 60) player.oil = Math.min(60, player.oil + 0.04); if (frame % 600 === 0) say('The beacon holds them. Your lamp drinks from it.', 200); }
+  for (let i = hollows.length-1; i >= 0; i--) if (Math.hypot(hollows[i].x-player.x, hollows[i].y-player.y) > 280) hollows.splice(i,1);
+}
+
+// ---------- draw ----------
+function draw(){
+  if (closeup.on){ drawCloseup(); return; }
+  if (inside.on){ drawInside(); return; }
+  const cx = Math.round(player.x - W/2), cy = Math.round(player.y - H/2);
+  sctx.fillStyle = tone(0.5); sctx.fillRect(0,0,W,H);
+  const tx0 = Math.floor(cx/T)-1, ty0 = Math.floor(cy/T)-1, tx1 = tx0 + W/T + 3, ty1 = ty0 + H/T + 8;
+  const objs = [];
+  const clear = statics.filter(o => (o.k === 'obelisk' || o.k === 'tower' || o.k === 'shack' || o.k === 'church' || o.k === 'windmill' || o.k === 'lighthouse' || o.k === 'shaman' || o.k === 'cistern' || o.k === 'barrow' || o.k === 'well' || o.k === 'arch' || o.k === 'ring' || o.k === 'watchtower' || o.k === 'shrine' || o.k === 'cairn') && Math.abs(o.x-player.x) < W && Math.abs(o.y-player.y) < H+160);
+  const inClearing = (px, py) => clear.some(o => Math.abs(px-o.x) < o.bw+10 && py > o.y+o.bh[0]-12 && py < o.y+o.bh[1]+8);
+  for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++){
+    const t = terrain(tx,ty), x = tx*T-cx, y = ty*T-cy, r = hash(tx*3, ty*7);
+    let v = 0.84;                                                                                   // snow: the bright ground everything else sits in
+    if (t === 'water') v = 0.25 + (r-0.5)*0.04; else if (t === 'bank') v = 0.62; else if (t === 'rock') v = 0.3 + r*0.1;
+    else if (t === 'ice') v = 0.96; else if (t === 'trail') v = 0.6; else if (t === 'forest') v = 0.42;                      // trail: packed dark earth, two full steps under the snow
+    else if (t === 'obsidian') v = 0.42; else if (t === 'pier') v = 0.5;
+    sctx.fillStyle = tone(v + (r-0.5)*0.03); sctx.fillRect(x,y,T,T);
+    if (t === 'snow' && r > 0.72){ sctx.fillStyle = tone(0.7); sctx.fillRect(x + Math.floor(r*13) % T, y + Math.floor(r*29) % T, 1, 1); }   // stipple
+    if (t === 'trail'){ sctx.fillStyle = tone(0.48); if (r > 0.3) sctx.fillRect(x + Math.floor(r*4), y+2, 3, 1); if (r < 0.7) sctx.fillRect(x + 2 + Math.floor(r*3), y+5, 3, 1); }   // ruts
+    if (t === 'water' && world.frozen){ sctx.fillStyle = tone(0.62 + (r-0.5)*0.08); sctx.fillRect(x, y, T, T); sctx.fillStyle = tone(0.8); if (r > 0.6) sctx.fillRect(x+Math.floor(r*5), y+Math.floor(r*7), 3, 1); if (r < 0.15) sctx.fillRect(x+2, y+1, 1, 5); }   // white to the far bank
+    else if (t === 'water'){ const ph = Math.floor(frame/20 + r*8)%T; sctx.fillStyle = tone(0.40); sctx.fillRect(x+Math.floor(r*3), y+ph, 4, 1); }
+    if (t === 'pier'){ sctx.fillStyle = tone(0.28); for (let i = 0; i < T; i += 2) sctx.fillRect(x+i, y, 1, T); sctx.fillRect(x, y+T-1, T, 1); }
+    if (t === 'ice' && r > 0.6){ sctx.fillStyle = tone(0.7); sctx.fillRect(x, y+Math.floor(r*6), T, 1); } if (t === 'ice' && r < 0.2){ sctx.fillStyle = tone(1); sctx.fillRect(x+Math.floor(r*30), y+Math.floor(r*35)%T, 2, 1); }
+    if (t === 'rock' && r > 0.5){ sctx.fillStyle = tone(0.25); sctx.fillRect(x+Math.floor(r*5), y+Math.floor(r*7)%T, 2, 2); }
+    if (t === 'obsidian'){ sctx.fillStyle = tone(0.30); sctx.fillRect(x, y, T, 1); sctx.fillRect(x, y, 1, T);   // slab seams
+      if (r > 0.82){ sctx.fillStyle = tone(0.95); sctx.fillRect(x+Math.floor(r*6), y+Math.floor(r*11)%T, 1, 1); } }   // glassy glint
+    if (t === 'snow' && r > 0.93){ sctx.fillStyle = tone(0.6); sctx.fillRect(x+Math.floor(r*7), y+3, 1, 1); }
+    if (t === 'forest' && !inClearing(tx*T+4, ty*T+4)){ const n = 1 + Math.floor(r*2); for (let i = 0; i < n; i++){ const ox = Math.floor(hash(tx+i,ty*5)*6), oy = Math.floor(hash(tx*5,ty+i)*6);
+      objs.push({ k:'tree', x:x+ox+1, y:y+oy+7, s: 8+Math.floor(hash(tx,ty+i*9)*5), key: tx+','+ty }); } }
+    else if (t === 'snow' && r > 0.985) objs.push({ k:'tree', x:x+3, y:y+7, s:9 });
+  }
+  const vis = o => o.x-cx > -80 && o.x-cx < W+80 && o.y-cy > -40 && o.y-cy < H+140;
+  statics.forEach(o => { if (vis(o)) objs.push(Object.assign({}, o, { x:o.x-cx, y:o.y-cy+(o.k==='house'?6:0) })); });
+  beacons.forEach(b => objs.push({ k:'beacon', x:b.x-cx, y:b.y-cy, lit:b.lit }));
+  caches.forEach(c => { if (!c.taken) objs.push({ k:'cache', x:c.x-cx, y:c.y-cy, fallen:c.fallen, pose:c.pose, face:c.face }); if (c.fallen) objs.push({ k:'body', x:c.x-cx+(c.face>0?-9:9), y:c.y-cy+1, pose:c.pose, face:c.face, looted:c.taken }); });
+  wolves.forEach(s => objs.push({ k:'wolf', x:s.x-cx, y:s.y-cy, face:s.face, step:s.step }));
+  others.forEach(o => objs.push({ k:'other', x:Math.round(o.x-cx), y:Math.round(o.y-cy), t:o.t, fire: o.burning && frame - o.burning < 1500 }));
+  if (world.after){ bones.forEach(b => { if (vis(b)) objs.push({ k:'bones', x:b.x-cx, y:b.y-cy, face:b.face }); });
+    hollows.forEach(h => objs.push({ k:'hollow', x:h.x-cx, y:h.y-cy, face:h.face, step:h.step, still: (h.t % 48) >= 14 }));
+    if (world.ship) objs.push({ k:'ship', x:SHIP.x-cx, y:SHIP.y-cy }); }
+  objs.push({ k:'player', x:Math.round(player.x-cx), y:Math.round(player.y-cy) });
+  if (!inside.on) for (const [fx, fy, f0, face, ground] of prints){ const age = frame - f0; if (age > 2400) continue; const x = Math.round(fx-cx), y = Math.round(fy-cy); if (x < -4 || x > W+4 || y < -4 || y > H+4) continue;
+    sctx.fillStyle = tone(ground === 'ice' ? 0.72 : age < 900 ? 0.46 : 0.6); sctx.fillRect(x, y, 2, 2); if (age < 1500) sctx.fillRect(x + (face > 0 ? 2 : -1), y, 1, 1); }   // a heel and a toe, filling in as the snow drifts
+  if (player.shard && !inside.on){ sctx.fillStyle = tone(0.58); burden.trail.forEach(([bx,by]) => sctx.fillRect(Math.round(bx-cx)-2, Math.round(by-cy), 5, 1));   // furrow
+    objs.push({ k:'burden', x:Math.round(burden.x-cx), y:Math.round(burden.y-cy) }); }
+  objs.sort((a,b) => a.y-b.y);
+  if (!inside.on){ sctx.fillStyle = tone(0.5);                                                                                // everything standing throws a shadow down and to the right
+    for (const o of objs){ if (o.x < -80 || o.x > W+80 || o.y < -10 || o.y > H+140) continue; const x = o.x|0, y = o.y|0;
+      if (o.k === 'tree'){ sctx.fillRect(x+1, y, Math.round(o.s*0.9), 1); sctx.fillRect(x+3, y+1, Math.round(o.s*0.6), 1); }
+      else if (o.k === 'house'){ shadow(x+8, y+1, 26, 5); } else if (o.k === 'shack' || o.k === 'shaman'){ shadow(x+7, y+2, 20, 4); }
+      else if (o.k === 'church'){ shadow(x+12, y+2, 38, 6); } else if (o.k === 'tower'){ shadow(x+50, y+2, 90, 12); }
+      else if (o.k === 'lighthouse' || o.k === 'windmill' || o.k === 'watchtower'){ shadow(x+14, y+1, 30, 3); } else if (o.k === 'beacon' || o.k === 'obelisk'){ shadow(x+8, y+1, 16, 2); }
+      else if (o.k === 'idol' || o.k === 'cairn' || o.k === 'well' || o.k === 'arch' || o.k === 'shrine'){ shadow(x+4, y+1, 10, 2); }
+      else if (o.k === 'player' || o.k === 'wolf' || o.k === 'hollow' || o.k === 'other' || o.k === 'body'){ shadow(x+2, y, 6, 1); } } }
+  for (const o of objs){
+    if (o.x < -80 || o.x > W+80 || o.y < -10 || o.y > H+140) continue;
+    const x = o.x, y = o.y;
+    switch (o.k){
+      case 'tree': { const f0 = o.key ? fire.get(o.key) : undefined, age = f0 === undefined ? -1 : frame - f0;
+        if (age < 0){ sctx.drawImage(treeSprite(o.s), x-3, y-o.s); break; }
+        if (age < 720){ const s = Math.max(3, Math.round(o.s * (1 - age/720*0.7)));                   // burning: the crown eats down to nothing
+          sctx.fillStyle = tone(0.05); for (let i = 0; i < s; i++){ const w = Math.max(1, Math.round((i/s)*3)); sctx.fillRect(x-Math.floor(w/2), y-s+i, w, 1); }
+          sctx.fillStyle = EM; const fl = Math.floor(frame/5 + hash(x+cx,3)*9)%3, big = age < 240 ? 2 : 0;
+          sctx.fillRect(x-1, y-s-2-fl-big, 3, 2+fl+big); sctx.fillRect(x, y-s-4-fl-big, 1, 2); if (fl === 1) sctx.fillRect(x+1, y-s+1, 1, 2);
+          if (age > 400 && fl === 2) sctx.fillRect(x-1, y-1, 1, 1); break; }
+        sctx.fillStyle = tone(0.06); sctx.fillRect(x-1, y-3, 3, 3); sctx.fillRect(x, y-4, 1, 1);          // stump
+        if (age < 1400 && Math.floor(frame/9 + hash(x+cx,5)*7)%4 === 0){ sctx.fillStyle = EM; sctx.fillRect(x + (hash(x+cx,frame>>4)>0.5?1:-1), y-2, 1, 1); }  // last coals
+        break; }
+      case 'house': { const yy = y-8;
+        sctx.fillStyle = tone(0.42); sctx.fillRect(x-11, yy-2, 22, 13);                                                       // walls
+        sctx.fillStyle = tone(0.3); for (let i = 0; i < 4; i++) sctx.fillRect(x-11, yy+1 + i*3, 22, 1);                          // plank lines
+        sctx.fillStyle = tone(0.16); sctx.fillRect(x-11, yy+10, 22, 1); sctx.fillRect(x-2, yy+3, 4, 8);                          // sill shadow, door
+        for (let i = 0; i < 10; i++){ sctx.fillStyle = tone(0.78); sctx.fillRect(x-4-i, yy-12+i, 4+i, 1); sctx.fillStyle = tone(0.58); sctx.fillRect(x, yy-12+i, 4+i, 1); }   // the roof: lit slope, shaded slope
+        sctx.fillStyle = tone(0.55); sctx.fillRect(x-11, yy-2, 2, 13);                                                             // light on the west wall
+        sctx.fillStyle = tone(0.9); sctx.fillRect(x-4, yy-12, 8, 1); sctx.fillStyle = tone(0.16); sctx.fillRect(x-14, yy-2, 28, 1); sctx.fillStyle = tone(0.3); sctx.fillRect(x+5, yy-16, 3, 5);   // snow on the ridge, eave shadow, chimney
+        sctx.fillStyle = EM; sctx.fillRect(x-7, yy+3, 2, 2); sctx.fillRect(x+6, yy+3, 2, 2); break; }
+      case 'cistern': { sctx.fillStyle = tone(0.28); sctx.fillRect(x-22, y-10, 44, 14); sctx.fillStyle = tone(0.5); sctx.fillRect(x-22, y-10, 44, 2); sctx.fillRect(x-22, y-10, 2, 14);   // a low stone rim, sunk in the snow
+        sctx.fillStyle = tone(0.06); sctx.fillRect(x-16, y-6, 32, 8); sctx.fillStyle = tone(0.2); for (let i = 0; i < 3; i++) sctx.fillRect(x-14 + ((i*7 + (frame>>3)) % 28), y-4 + i*2, 4, 1);   // black water inside it
+        sctx.fillStyle = tone(0.4); sctx.fillRect(x-6, y-2, 12, 6); sctx.fillStyle = tone(0.02); sctx.fillRect(x-4, y, 8, 5); sctx.fillStyle = tone(0.6); for (let i = 0; i < 3; i++) sctx.fillRect(x-3, y+1+i, 6, 1);   // steps down
+        if (!world.map) { sctx.fillStyle = tone(0.35); sctx.fillRect(x-5, y-1, 10, 6); } break; }
+      case 'barrow': { sctx.fillStyle = tone(0.32); for (let i = 0; i < 14; i++){ const w = Math.round(24*Math.sqrt(1 - Math.pow(i/14, 2))); sctx.fillRect(x-w, y-14+i, 2*w, 1); }   // the mound
+        sctx.fillStyle = tone(0.18); for (let i = 0; i < 20; i++) sctx.fillRect(x-20 + hash(i,4)*40|0, y-12 + hash(4,i)*10|0, 2, 1);                  // grass on it
+        sctx.fillStyle = tone(0.5); sctx.fillRect(x-7, y-6, 14, 2); sctx.fillRect(x-7, y-6, 2, 8); sctx.fillRect(x+5, y-6, 2, 8);                          // lintel and posts
+        sctx.fillStyle = tone(0.02); sctx.fillRect(x-5, y-4, 10, 7); if (!world.map){ sctx.fillStyle = tone(0.4); sctx.fillRect(x-5, y-4, 10, 7); }       // the dark mouth, or a stone in it
+        sctx.fillStyle = tone(0.75); sctx.fillRect(x-1, y-9, 2, 3); sctx.fillRect(x-2, y-8, 4, 1); break; }
+      case 'well': { sctx.fillStyle = tone(0.5); sctx.fillRect(x-7, y-4, 14, 8); sctx.fillStyle = tone(0.3); sctx.fillRect(x-7, y+2, 14, 2); sctx.fillStyle = tone(0.08); sctx.fillRect(x-4, y-2, 8, 4);   // the ring, the dark down it
+        sctx.fillStyle = tone(0.7); sctx.fillRect(x-7, y-4, 14, 1); for (let i = -6; i < 7; i += 3) sctx.fillRect(x+i, y-3, 1, 5);                                                        // stones
+        sctx.fillStyle = tone(0.22); sctx.fillRect(x-6, y-16, 2, 12); sctx.fillRect(x+4, y-16, 2, 12); sctx.fillRect(x-7, y-17, 14, 2);                                               // the frame and crossbar
+        sctx.fillStyle = tone(0.4); sctx.fillRect(x-4, y-18, 8, 1); sctx.fillStyle = tone(0.6); sctx.fillRect(x, y-15, 1, world.mushroom ? 4 : 12); sctx.fillStyle = tone(0.3); sctx.fillRect(x-1, y-4 - (world.mushroom ? 8 : 0), 3, 2);   // rope, bucket
+        if (!world.mushroom && frame % 60 < 35){ sctx.fillStyle = tone(0.85); sctx.fillRect(x, y-21 + (frame % 60 < 18 ? 0 : 1), 1, 1); } break; }
+      case 'shaman': { sctx.fillStyle = tone(0.26); sctx.fillRect(x-11, y-7, 22, 12);                                      // the old man's shack
+        sctx.fillStyle = tone(0.2); for (let i = 0; i < 3; i++) sctx.fillRect(x-11, y-4 + i*3, 22, 1);
+        for (let i = 0; i < 7; i++){ sctx.fillStyle = tone(0.74); sctx.fillRect(x-5-i, y-14+i, 5+i, 1); sctx.fillStyle = tone(0.52); sctx.fillRect(x, y-14+i, 5+i, 1); } sctx.fillStyle = tone(0.9); sctx.fillRect(x-5, y-14, 10, 1); sctx.fillStyle = tone(0.4); sctx.fillRect(x-11, y-7, 2, 12);
+        sctx.fillStyle = tone(0.1); sctx.fillRect(x-11, y+4, 22, 1); sctx.fillRect(x-2, y-3, 4, 8);
+        sctx.fillStyle = tone(0.8); sctx.fillRect(x-11, y-14, 1, 12); sctx.fillRect(x-12, y-14, 3, 1); sctx.fillRect(x-12, y-11, 3, 1);   // bone pole
+        sctx.fillStyle = EM; sctx.fillRect(x+4, y-1, 2, 2);                                                                 // fire inside
+        { const talking = false, ox = x-34, oy = y+6, b = Math.floor(audio.beatPhase()*90), hand = talking ? 1 : b < 8 ? 0 : b >= 22 && b < 28 ? 1 : b >= 45 && b < 51 ? 0 : b >= 67 && b < 73 ? 1 : 1;   // the old man, cross-legged, at his drum
+          sctx.fillStyle = tone(0.06); sctx.fillRect(ox-3, oy-6, 6, 5); sctx.fillRect(ox-1, oy-9, 3, 3); sctx.fillRect(ox-4, oy-1, 8, 2);
+          sctx.fillStyle = tone(0.35); sctx.fillRect(ox-1, oy-11, 3, 2);                                                       // white hair
+          sctx.fillStyle = tone(0.3); sctx.fillRect(ox-3, oy-3, 7, 3); sctx.fillStyle = tone(0.7); sctx.fillRect(ox-3, oy-4, 7, 1);   // the drum
+          sctx.fillStyle = tone(0.06); sctx.fillRect(ox-4, oy-5-hand, 2, 1); sctx.fillRect(ox+3, oy-5-(1-hand), 2, 1);        // hands, one up one down
+          if (talking){ sctx.fillStyle = tone(0.06); sctx.fillRect(ox+6, oy-6, 3, 4); sctx.fillStyle = EM; sctx.fillRect(ox+7, oy-5+((frame>>2)%2), 1, 2); }   // his lantern, lit for you
+          else if (world.met && (frame>>3)%2 === 0) sctx.fillRect(ox+1, oy-8, 1, 1);
+          const fx = ox-12, fy = oy+2; sctx.fillStyle = tone(0.2); sctx.fillRect(fx-4, fy, 9, 2); sctx.fillStyle = tone(0.35); sctx.fillRect(fx-3, fy-1, 2, 1); sctx.fillRect(fx+2, fy-1, 3, 1);   // stones and sticks
+          sctx.fillStyle = EM; const fl = (frame>>2)%3; sctx.fillRect(fx-1, fy-3-fl, 3, 2+fl); sctx.fillRect(fx, fy-5-fl, 1, 2); }                                                        // a small fire, kept low
+        sctx.fillStyle = tone(0.4); sctx.fillRect(x-7, y+6, 14, 3); sctx.fillStyle = tone(0.12); sctx.fillRect(x-7, y+9, 14, 1); // the stone table
+        for (let i = 0; i < 3; i++){ const sx2 = x-5+i*5; sctx.fillStyle = world.relics[i] ? EM : tone(0.06); sctx.fillRect(sx2, y+7, 2, 1); }   // three sockets
+        if (world.ended){ sctx.fillStyle = tone(0.03); sctx.fillRect(x-1, y-6, 2, 13); sctx.fillRect(x-4, y-2, 8, 1); sctx.fillRect(x-2, y-4, 4, 1); for (let i = 0; i < 5; i++) sctx.fillRect(x-2+i, y+3+Math.round((i-2)*0.4), 1, 1);   // the cross on the table
+          sctx.fillStyle = EM; sctx.fillRect(x, y-2, 1, 1); }
+        if (world.ended){ sctx.fillStyle = tone(0.02); sctx.fillRect(x-6, y-7, 13, 14); sctx.drawImage(mandelCanvas(40, 9, 11), x-4, y-5); const age = frame - world.endT, ph = audio.beatPhase(), hgt = Math.min(H, age*3), w = age < 30 ? 1 : 3 + (ph < 0.2 ? 2 : 0) + (Math.sin(frame*0.3)>0 ? 1 : 0);        // the statue, and the light standing up from it
+          sctx.fillStyle = tone(1); sctx.fillRect(x-Math.floor(w/2), y+7-hgt, w, hgt);
+          sctx.fillStyle = tone(0.75); for (let i = 0; i < hgt; i += 4) if ((i/4 + frame) % 3 === 0){ sctx.fillRect(x-Math.floor(w/2)-1, y+7-i, 1, 2); sctx.fillRect(x+Math.ceil(w/2), y+7-i, 1, 2); } }
+        break; }
+      case 'other': { const form = Math.floor(o.t/180)%3, tr = o.t % 180, morph = tr < 20 ? (20-tr)/20 : 0;              // it is never quite one thing
+        sctx.fillStyle = tone(0.03);
+        if (form === 0){ const j = (o.t>>3)%2; sctx.fillRect(x-1, y-18, 2, 2); sctx.fillRect(x-1, y-16, 3, 8);           // man-like, from a distance
+          sctx.fillRect(x-4, y-15+j, 1, 6); sctx.fillRect(x-5, y-9+j, 1, 4); sctx.fillRect(x+3, y-15-j, 1, 7); sctx.fillRect(x+4, y-8-j, 1, 3);   // arms with too many joints
+          sctx.fillRect(x-1, y-8, 1, 8); sctx.fillRect(x+1, y-8, 1, 8); sctx.fillRect(x, y-4+j, 1, 1); }
+        else if (form === 1){ sctx.fillRect(x-3, y-8, 6, 6);                                                             // tentacled
+          for (let k = 0; k < 6; k++){ const a = k*1.05 + Math.sin(o.t*0.09 + k)*0.5; for (let r = 3; r < 10; r++){ const wob = Math.sin(o.t*0.2 + k*2 + r*0.6)*1.5;
+            sctx.fillRect(Math.round(x + Math.cos(a)*r + Math.sin(a)*wob), Math.round(y-5 + Math.sin(a)*r*0.6 - Math.cos(a)*wob*0.6), 1, 1); } } }
+        else { for (let k = 0; k < 14; k++){ const h1 = hash(k, o.t>>2), h2 = hash(o.t>>2, k);                             // unmade: a scatter that is somehow still it
+          sctx.fillRect(Math.round(x + (h1-0.5)*14), Math.round(y-8 + (h2-0.5)*16), 1, 1); } }
+        if (morph > 0){ for (let k = 0; k < 6; k++) sctx.fillRect(Math.round(x + (hash(k,o.t)-0.5)*10), Math.round(y-9 + (hash(o.t,k)-0.5)*14), 1, 1); }
+        sctx.fillStyle = tone(0.95); if ((o.t>>4)%5 === 0) sctx.fillRect(x + (form===1 ? 0 : 1), y-14+(form===1 ? 8 : 0), 1, 1);   // an eye, sometimes
+        if (o.fire){ sctx.fillStyle = EM; const n = form === 2 ? 5 : 8;                                                // the fire rides it and wanders over whatever shape it is
+          for (let k = 0; k < n; k++){ const a = o.t*0.13 + k*1.3, rr = form === 1 ? 4 + Math.sin(o.t*0.2+k)*4 : 2 + (k%3);
+            const fx = form === 0 ? x + Math.round(Math.sin(a)*3) : x + Math.round(Math.cos(a)*rr), fy = form === 0 ? y-17 + ((k*5 + (o.t>>1)) % 17) : y-6 + Math.round(Math.sin(a)*rr*0.7) - (form===2 ? (k*3+(o.t>>2))%9 : 0);
+            sctx.fillRect(fx, fy, 1 + (k%2), 1 + ((k+o.t)%3 === 0 ? 1 : 0)); }
+          sctx.fillRect(x-1, y-20-((o.t>>2)%3), 2, 2); }
+        break; }
+      case 'arch': { sctx.fillStyle = tone(0.34); sctx.fillRect(x-12, y-14, 5, 18); sctx.fillRect(x+7, y-10, 5, 14); sctx.fillStyle = tone(0.5); sctx.fillRect(x-12, y-14, 1, 18); sctx.fillRect(x+7, y-10, 1, 14);   // two piers, one broken shorter
+        sctx.fillStyle = tone(0.34); for (let i = 0; i < 8; i++) sctx.fillRect(x-7+i, y-15-Math.round(Math.sin(i/8*Math.PI)*3), 1, 2); sctx.fillStyle = tone(0.14); sctx.fillRect(x-12, y+3, 24, 1);   // what is left of the span
+        sctx.fillStyle = tone(0.2); sctx.fillRect(x+2, y-17, 3, 2); sctx.fillRect(x+9, y-13, 2, 1); break; }                                                                                             // fallen stones
+      case 'ring': { for (let k = 0; k < 7; k++){ const a = k/7*Math.PI*2, sx = x + Math.cos(a)*11|0, sy = y + Math.sin(a)*6|0; sctx.fillStyle = tone(0.3); sctx.fillRect(sx-1, sy-3-(k%2), 3, 3+(k%2)); sctx.fillStyle = tone(0.5); sctx.fillRect(sx-1, sy-3-(k%2), 1, 3+(k%2)); } break; }
+      case 'watchtower': { sctx.fillStyle = tone(0.22); sctx.fillRect(x-4, y-28, 8, 32); sctx.fillStyle = tone(0.4); sctx.fillRect(x-4, y-28, 2, 32); sctx.fillStyle = tone(0.06); sctx.fillRect(x-1, y-24, 2, 3); sctx.fillRect(x, y-14, 2, 3);   // the tower, and its slit windows
+        sctx.fillStyle = tone(0.12); sctx.fillRect(x-4, y-30, 3, 2); sctx.fillRect(x+2, y-31, 2, 3); sctx.fillStyle = tone(0.3); sctx.fillRect(x+5, y-2, 6, 3); sctx.fillRect(x+9, y-4, 3, 2);           // the broken top, and what fell from it
+        sctx.fillStyle = tone(0.1); sctx.fillRect(x-4, y+3, 8, 1); break; }
+      case 'shrine': { sctx.fillStyle = tone(0.34); sctx.fillRect(x-6, y-8, 12, 12); sctx.fillStyle = tone(0.5); for (let i = 0; i < 5; i++) sctx.fillRect(x-7-i+0, y-9-i, 14+2*i, 1); sctx.fillStyle = tone(0.06); sctx.fillRect(x-3, y-4, 6, 8);   // a little stone house with a peaked cap and a dark mouth
+        sctx.fillStyle = EM; sctx.fillRect(x-1, y-1 + ((frame>>3)%2), 2, 2); sctx.fillStyle = tone(0.14); sctx.fillRect(x-6, y+4, 12, 1); break; }
+      case 'cairn': { for (let i = 0; i < 6; i++){ const w = 10 - i*1.5; sctx.fillStyle = tone(0.28 + (i%2)*0.08); sctx.fillRect(x - w/2|0, y - 1 - i*2, w|0, 2); } sctx.fillStyle = tone(0.5); sctx.fillRect(x-1, y-13, 2, 2); sctx.fillStyle = tone(0.12); sctx.fillRect(x-5, y+1, 10, 1); break; }
+      case 'shack': { sctx.fillStyle = tone(0.30); sctx.fillRect(x-8, y-6, 16, 11);
+        sctx.fillStyle = tone(0.22); for (let i = 0; i < 3; i++) sctx.fillRect(x-8, y-3 + i*3, 16, 1);
+        for (let i = 0; i < 6; i++){ sctx.fillStyle = tone(0.78); sctx.fillRect(x-3-i, y-12+i, 3+i, 1); sctx.fillStyle = tone(0.56); sctx.fillRect(x, y-12+i, 3+i, 1); } sctx.fillStyle = tone(0.9); sctx.fillRect(x-3, y-12, 6, 1); sctx.fillStyle = tone(0.42); sctx.fillRect(x-8, y-6, 2, 11);
+        sctx.fillStyle = tone(0.1); sctx.fillRect(x-8, y+4, 16, 1); sctx.fillRect(x-1, y-2, 3, 7); sctx.fillRect(x+4, y-3, 2, 2); break; }
+      case 'windmill': { const hh = 30;
+        for (let i = 0; i < hh; i++){ const w = 6 + Math.round(i/hh*6); sctx.fillStyle = tone(0.36); sctx.fillRect(x-Math.floor(w/2), y-hh+i, w, 1); }
+        sctx.fillStyle = tone(0.14); for (let i = 0; i < hh; i += 2) sctx.fillRect(x+2, y-hh+i, 1, 1);        // shadow side
+        sctx.fillStyle = tone(0.08); sctx.fillRect(x-6, y, 12, 3); sctx.fillRect(x-1, y-5, 3, 5);              // base, door
+        sctx.fillStyle = tone(0.7); sctx.fillRect(x-4, y-hh-3, 8, 3);                                          // cap
+        const a = frame*0.012; sctx.fillStyle = tone(0.1);
+        for (let b = 0; b < 4; b++){ const ang = a + b*Math.PI/2, c = Math.cos(ang), sn = Math.sin(ang);
+          for (let r = 2; r < 16; r++){ sctx.fillRect(Math.round(x+c*r), Math.round(y-hh-2+sn*r), 1, 1);
+            if (r > 5 && r < 15 && (r&1)) sctx.fillRect(Math.round(x+c*r-sn*1.5), Math.round(y-hh-2+sn*r+c*1.5), 1, 1); } } // sail lattice
+        sctx.fillRect(x-1, y-hh-3, 3, 3); break; }
+      case 'lighthouse': { const hh = 40;
+        for (let i = 0; i < hh; i++){ const w = 6 + Math.round(i/hh*4); sctx.fillStyle = tone((Math.floor(i/6)&1) ? 0.92 : 0.2); sctx.fillRect(x-Math.floor(w/2), y-hh+i, w, 1); }
+        sctx.fillStyle = tone(0.08); sctx.fillRect(x-6, y, 12, 3); sctx.fillRect(x-1, y-5, 3, 5);
+        sctx.fillStyle = tone(0.12); sctx.fillRect(x-4, y-hh-6, 8, 6); sctx.fillStyle = tone(0.6); sctx.fillRect(x-3, y-hh-5, 6, 4); // lamp room
+        if (world.lhLit){ sctx.fillStyle = EM; sctx.fillRect(x-2, y-hh-4, 4, 2);
+        const a = frame*0.02, c = Math.cos(a), sn = Math.sin(a)*0.5;                                            // beam sweeps, foreshortened
+        [-0.42, -0.24, -0.09, 0.09, 0.24, 0.42].forEach((off, k) => {                                                     // a fan of rays, each shimmering on its own clock
+          const cr = Math.cos(a+off), sr = Math.sin(a+off)*0.5, len = 70 + Math.sin(frame*0.11 + k*1.9)*30 + (k === 2 || k === 3 ? 30 : 0);
+          for (let r = 5; r < len; r += 3){ if (((r/3|0) + (frame>>1) + k*5) % 3 === 0) continue;                                // broken, flickering lines
+            sctx.fillRect(Math.round(x+cr*r), Math.round(y-hh-3+sr*r), r < 24 && (k === 2 || k === 3) ? 2 : 1, 1); } });
+        for (let r = 4; r < 120; r += 3) if ((r + frame) % 4 !== 0) sctx.fillRect(Math.round(x+c*r), Math.round(y-hh-3+sn*r), 1, 1); }   // centre ray
+
+        else { sctx.fillStyle = tone(0.04); sctx.fillRect(x-2, y-hh-4, 4, 2); }
+        sctx.fillStyle = tone(0.2); sctx.fillRect(x-5, y-hh-8, 10, 2); break; }
+      case 'church': { const yy = y-6;
+        sctx.fillStyle = tone(0.46); sctx.fillRect(x-13, yy-6, 26, 13);                                       // nave
+        sctx.fillStyle = tone(0.14); sctx.fillRect(x-13, yy+6, 26, 1); sctx.fillRect(x-2, yy, 4, 7);            // base, door
+        sctx.fillStyle = tone(0.7); for (let i = 0; i < 9; i++) sctx.fillRect(x-7-i, yy-15+i, 14+2*i, 1); sctx.fillStyle = tone(0.92); sctx.fillRect(x-7, yy-15, 14, 1);      // long roof, ridge up
+        sctx.fillStyle = tone(0.2); sctx.fillRect(x-15, yy-6, 30, 1);
+        sctx.fillStyle = tone(0.38); sctx.fillRect(x-19, yy-30, 8, 37); sctx.fillStyle = tone(0.16); sctx.fillRect(x-13, yy-30, 2, 37); // tower
+        sctx.fillStyle = tone(0.9); for (let i = 0; i < 5; i++) sctx.fillRect(x-15-i, yy-35+i, 1+2*i, 1);      // spire, point up
+        sctx.fillStyle = tone(0.1); sctx.fillRect(x-16, yy-40, 2, 5); sctx.fillRect(x-17, yy-39, 4, 1);         // cross
+        sctx.fillStyle = tone(0.1); sctx.fillRect(x-17, yy-24, 4, 5); sctx.fillStyle = tone(0.8); sctx.fillRect(x-16, yy-23, 2, 3); // bell arch
+        sctx.fillStyle = EM; sctx.fillRect(x-8, yy-2, 1, 3); sctx.fillRect(x-4, yy-2, 1, 3); sctx.fillRect(x+3, yy-2, 1, 3); sctx.fillRect(x+7, yy-2, 1, 3); // tall windows
+        break; }
+      case 'boat': { sctx.fillStyle = tone(0.12); sctx.fillRect(x-5, y-2, 11, 2); sctx.fillRect(x-4, y, 9, 1); sctx.fillRect(x-6, y-3, 1, 1); sctx.fillRect(x+6, y-3, 1, 1);
+        sctx.fillRect(x, y-9, 1, 7); break; }
+      case 'idol': { const ink = tone(0.16), mid = tone(0.45); sctx.fillStyle = ink;
+        switch (o.kind){
+          case 0: sctx.fillRect(x-1, y-14, 3, 15); sctx.fillRect(x-2, y-16, 5, 4); sctx.fillRect(x-3, y, 7, 2);      // pillar with a head
+            sctx.fillStyle = mid; sctx.fillRect(x+1, y-14, 1, 12); break;
+          case 1: sctx.fillRect(x-4, y-12, 3, 13); sctx.fillRect(x+2, y-9, 3, 10); sctx.fillRect(x-5, y, 11, 2);      // two leaning stones
+            sctx.fillStyle = mid; sctx.fillRect(x-4, y-11, 1, 10); sctx.fillRect(x+2, y-8, 1, 8); break;
+          case 2: for (let i = 0; i < 6; i++) sctx.fillRect(x-3+Math.round(Math.sin(i*1.9)*1), y-2-i*2, 6-Math.floor(i/2), 2); // cairn
+            sctx.fillStyle = mid; sctx.fillRect(x, y-8, 1, 6); break;
+          case 3: sctx.fillRect(x-2, y-18, 5, 3); sctx.fillRect(x-1, y-15, 3, 16); sctx.fillRect(x-4, y-12, 9, 2);    // totem with arms
+            sctx.fillRect(x-4, y-14, 2, 3); sctx.fillRect(x+3, y-14, 2, 3); sctx.fillRect(x-3, y, 7, 2);
+            sctx.fillStyle = mid; sctx.fillRect(x, y-17, 1, 1); sctx.fillRect(x+1, y-14, 1, 13); break; }
+        if (o.eye){ sctx.fillStyle = EM; sctx.fillRect(x, y-15-(o.kind===3?2:o.kind===1?-4:o.kind===2?4:0), 1, 1); }
+        if (o.depth > 0.6){ sctx.fillStyle = tone(0.9); for (let i = 0; i < 4; i++) sctx.fillRect(x-1+((i*7)%3), y-13+i*3, 1, 1); } // glyphs
+        break; }
+      case 'obelisk': { const hgt = 24 + o.lvl*14, w = 5 + o.lvl*2, wh = Math.floor(w/2);
+        if (o.ring){ sctx.fillStyle = tone(0.2); const R = 10 + o.lvl*4;                                                   // stone ring around it
+          for (let i = 0; i < 7; i++){ const ang = i/7*Math.PI*2; const sx = Math.round(x+Math.cos(ang)*R), sy = Math.round(y+Math.sin(ang)*R*0.55);
+            sctx.fillRect(sx-1, sy-6, 3, 7); } }
+        sctx.fillStyle = tone(0.58); sctx.fillRect(x-wh-3, y-1, w+6, 3);                                               // plinth
+        sctx.fillStyle = tone(0.12); sctx.fillRect(x-wh-3, y+1, w+6, 1);
+        for (let i = 0; i < hgt; i++){ const ww = Math.max(2, Math.round(w * (0.55 + 0.45*i/hgt))); sctx.fillStyle = tone(0.24); sctx.fillRect(x-Math.floor(ww/2), y-hgt+i, ww, 1); }
+        sctx.fillStyle = tone(0.5); for (let i = 0; i < hgt; i++){ const ww = Math.max(2, Math.round(w * (0.55 + 0.45*i/hgt))); sctx.fillRect(x-Math.floor(ww/2)+ww-1, y-hgt+i, 1, 1); } // lit edge
+        sctx.fillStyle = tone(0.06); sctx.fillRect(x-1, y-hgt-4, 2, 4);                                                 // pyramidion
+        sctx.fillStyle = tone(0.88); for (let i = 3; i < hgt-4; i += 4) sctx.fillRect(x-1+((i*5)%3)-1, y-hgt+i, 1, 1);   // glyph column
+        if (o.lvl >= 3){ sctx.fillStyle = EM; sctx.fillRect(x, y-hgt-2, 1, 1); } break; }
+      case 'tower': { const hh = 150, w = 56;
+        sctx.fillStyle = tone(0.07); sctx.fillRect(x-w/2, y-hh, w, hh+6);
+        sctx.fillStyle = tone(0.3); sctx.fillRect(x+w/2-9, y-hh, 9, hh+6); sctx.fillStyle = tone(0.75); sctx.fillRect(x+w/2-1, y-hh, 1, hh+6); sctx.fillRect(x-w/2, y-hh, 1, hh+6);
+        for (let i = 0; i < 90; i++){ const rr = hash(i*3, 11), r2 = hash(7, i*5); sctx.fillStyle = tone(0.95);
+          sctx.fillRect(x-w/2+Math.floor(rr*w), y-hh+Math.floor(r2*hh), 1, 1); }
+        sctx.fillStyle = tone(0.05); for (let i = 1; i < 6; i++) sctx.fillRect(x-w/2, y-hh+i*25, w, 1);
+        sctx.fillStyle = tone(0.28); sctx.fillRect(x-w/2-6, y-hh-14, w+12, 14); sctx.fillRect(x-4, y-hh-30, 8, 16);
+        sctx.fillStyle = tone(0.0); sctx.fillRect(x-6, y-16, 13, 22); sctx.fillStyle = tone(0.5); sctx.fillRect(x-7, y-17, 15, 1); sctx.fillRect(x-7, y-17, 1, 23); sctx.fillRect(x+7, y-17, 1, 23);   // the door, framed
+        if (!player.relic){ sctx.fillStyle = EM; sctx.fillRect(x-1, y-13 + ((frame>>3)%2), 3, 2); sctx.fillRect(x, y-15, 1, 1); } break; }                                     // and something burning just inside it
+      case 'beacon': { const hgt = 42;
+        sctx.fillStyle = tone(0.22); sctx.fillRect(x-5, y-hgt, 10, hgt+3);
+        sctx.fillStyle = tone(0.4); sctx.fillRect(x+2, y-hgt, 3, hgt+3);
+        sctx.fillStyle = tone(0.12); for (let i = 0; i < 5; i++) sctx.fillRect(x-4, y-hgt+6+i*8, 3, 2);
+        sctx.fillStyle = tone(0.3); sctx.fillRect(x-7, y+1, 14, 3);
+        if (o.lit){ sctx.fillStyle = EM; sctx.fillRect(x-4, y-hgt-4, 8, 5); const f = Math.sin(frame*0.3)>0?1:0; sctx.fillRect(x-2+f, y-hgt-7, 4, 3); }
+        else { sctx.fillStyle = tone(0.5); sctx.fillRect(x-4, y-hgt-3, 8, 3); } break; }
+      case 'cache': { sctx.fillStyle = tone(0.2); sctx.fillRect(x-2, y-3, 4, 4); sctx.fillStyle = EM; sctx.fillRect(x-1, y-2, 2, 1); break; }
+      case 'body': { const f = o.face, ink = tone(0.06), pale = tone(0.55); sctx.fillStyle = ink;                             // the one who carried it. four ways to have stopped.
+        if (o.pose === 0){ sctx.fillRect(x-5, y-2, 10, 2); sctx.fillRect(x+6*f, y-3, 3, 2); sctx.fillRect(x+5*f, y-4, 5, 1); sctx.fillRect(x-7*f, y-1, 2, 1);   // flat on the back, hat still on
+          sctx.fillStyle = pale; sctx.fillRect(x-1, y-3, 1, 1); }
+        else if (o.pose === 1){ sctx.fillRect(x-4, y-3, 8, 3); sctx.fillRect(x+5*f, y-2, 2, 2); sctx.fillRect(x-6*f, y-1, 2, 1); sctx.fillRect(x+2*f, y-5, 2, 2);   // curled on the side, knees drawn up
+          sctx.fillStyle = pale; sctx.fillRect(x+5*f, y-3, 2, 1); }
+        else if (o.pose === 2){ sctx.fillRect(x-1, y-6, 3, 4); sctx.fillRect(x-2, y-2, 5, 2); sctx.fillRect(x-1, y-8, 3, 2); sctx.fillRect(x-3, y-9, 7, 1);   // sat against nothing, slumped, head down
+          sctx.fillRect(x+3*f, y-5, 2, 1); sctx.fillRect(x+4*f, y-4, 1, 2); sctx.fillStyle = pale; sctx.fillRect(x+3*f, y-3, 2, 1); }
+        else { sctx.fillRect(x-6, y-1, 12, 1); sctx.fillRect(x-3, y-2, 6, 1); sctx.fillRect(x+7*f, y-2, 2, 2); sctx.fillRect(x-8*f, y-3, 2, 3);   // face down, one arm reaching for the can
+          sctx.fillStyle = pale; sctx.fillRect(x-8*f, y-4, 2, 1); }
+        if (!o.looted && frame % 90 < 10){ sctx.fillStyle = tone(0.35); sctx.fillRect(x, y-11 - (frame%90)/4|0, 1, 1); }                                 // a little snow lifts off them, now and then
+        break; }
+      case 'wolf': { const f = o.face; sctx.fillStyle = tone(0.08); const ph = Math.floor(o.step)%2;
+        sctx.fillRect(x-4, y-5, 8, 3); sctx.fillRect(x+4*f, y-6, 3, 2); sctx.fillRect(x+6*f, y-5, 2, 1); sctx.fillRect(x+4*f, y-7, 1, 1);
+        sctx.fillRect(x-5*f, y-7, 1, 3); sctx.fillRect(x-6*f, y-8, 1, 1);
+        sctx.fillRect(x-4+ph, y-2, 1, 2); sctx.fillRect(x-2-ph, y-2, 1, 2); sctx.fillRect(x+1+ph, y-2, 1, 2); sctx.fillRect(x+3-ph, y-2, 1, 2); break; }
+      case 'bones': { const f = o.face; sctx.fillStyle = tone(0.92);
+        for (let i = 0; i < 4; i++) sctx.fillRect(x-3+i*2, y-3, 1, 3); sctx.fillRect(x-4, y-4, 9, 1);        // ribs and spine
+        sctx.fillRect(x+5*f, y-4, 3, 2); sctx.fillRect(x+6*f, y-2, 2, 1); sctx.fillStyle = tone(0.1); sctx.fillRect(x+5*f, y-3, 1, 1); // skull
+        sctx.fillStyle = tone(0.92); sctx.fillRect(x-6*f, y-2, 3, 1); break; }
+      case 'hollow': { const f = o.face, ink = tone(0.04); sctx.fillStyle = ink;
+        const jit = o.still ? 0 : Math.round(Math.sin(o.step*7)*1);                                        // wrong twitch when moving
+        sctx.fillRect(x-1+jit, y-17, 2, 3); sctx.fillRect(x-1, y-14, 3, 7);                                 // small head, long body
+        sctx.fillRect(x-3-jit, y-13, 1, 9); sctx.fillRect(x+3+jit, y-13, 1, 9);                            // arms hang past the hips
+        sctx.fillRect(x-1, y-7, 1, 7); sctx.fillRect(x+1, y-7+(o.still?0:1), 1, 7-(o.still?0:1));           // legs too long
+        sctx.fillStyle = tone(0.9); sctx.fillRect(x+f, y-16, 1, 1);
+        sctx.fillStyle = EM; const fl = (frame >> 2) + o.step*3|0;                                          // it is on fire, quietly
+        sctx.fillRect(x-1+((fl%3)-1), y-19-(fl%2), 2, 2); sctx.fillRect(x-3-jit, y-5+(fl%3), 1, 1); sctx.fillRect(x+3+jit, y-6+((fl>>1)%3), 1, 1);
+        if (fl % 5 < 2) sctx.fillRect(x-2, y-15, 1, 1); if (fl % 7 < 2) sctx.fillRect(x+2, y-10, 1, 1); break; }
+      case 'ship': { sctx.fillStyle = tone(0.1); sctx.fillRect(x-14, y-4, 30, 4); sctx.fillRect(x-12, y, 26, 2); sctx.fillRect(x-16, y-6, 2, 3); sctx.fillRect(x+16, y-7, 2, 4);
+        sctx.fillRect(x-2, y-30, 1, 26); sctx.fillRect(x+6, y-22, 1, 18);                                   // masts
+        sctx.fillStyle = tone(0.85); for (let i = 0; i < 12; i++) sctx.fillRect(x-1, y-28+i, Math.round(i*0.7)+1, 1); // furled sail
+        sctx.fillStyle = EM; sctx.fillRect(x+13, y-6, 1, 1); break; }
+      case 'burden': { const px = Math.round(player.x-cx), py = Math.round(player.y-cy)-4, n = Math.round(Math.hypot(px-x, py-y)/2);
+        sctx.fillStyle = tone(0.2); for (let i = 1; i < n; i++) sctx.fillRect(Math.round(x+(px-x)*i/n), Math.round(y+(py-y)*i/n + (burden.taut ? 0 : Math.sin(i/n*Math.PI)*2)), 1, 1); // chain, sags when slack
+        const f = player.x > burden.x ? 1 : -1;
+        sctx.fillStyle = tone(0.04); sctx.fillRect(x-5, y-3, 11, 3); sctx.fillRect(x+6*f, y-2, 2, 1);      // obelisk lying on its side
+        sctx.fillStyle = tone(0.55); sctx.fillRect(x-4, y-3, 9, 1); sctx.fillStyle = tone(0.9); sctx.fillRect(x-2, y-2, 1, 1); sctx.fillRect(x+2, y-2, 1, 1);
+        sctx.fillStyle = tone(0.25); sctx.fillRect(x-6, y, 13, 1); break; }
+      case 'player': { drawPlayer(x, y); break; }
+    }
+  }
+  let best = null, bd = 1e9;
+  if (world.ended) best = null;
+  else if (player.relic){ best = { x: SHAMAN.x-34, y: SHAMAN.y+6 }; bd = Math.hypot(best.x-player.x, best.y-player.y); }
+  else if (world.map){ [TOWER, CIST, BARROW].forEach((site, i) => { if (world.relics[i]) return; const d = Math.hypot(site.tx*T-player.x, site.ty*T-player.y); if (d < bd){ bd = d; best = { x: site.tx*T, y: site.ty*T }; } }); }
+  else beacons.forEach(b => { if (!b.lit){ const d = Math.hypot(b.x-player.x, b.y-player.y); if (d < bd){ bd = d; best = b; } } });
+  if (best && bd > 140){ const a = Math.atan2(best.y-player.y, best.x-player.x);
+    sctx.fillStyle = EM; sctx.fillRect(Math.round(W/2+Math.cos(a)*W*0.44)-1, Math.round(H/2+Math.sin(a)*H*0.44)-1, 2, 2); }
+}
+
+function drawInside(){
+  const cx = Math.round(inside.x - W/2), cy = Math.round(inside.y - H/2);
+  sctx.fillStyle = tone(0.03); sctx.fillRect(0,0,W,H);
+  const tx0 = Math.floor(cx/IT)-1, ty0 = Math.floor(cy/IT)-1, tx1 = tx0 + W/IT + 3, ty1 = ty0 + H/IT + 3;
+  for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++){
+    const t = (tx < 0 || ty < 0 || tx >= IW || ty >= IH) ? '#' : INT[ty][tx], x = tx*IT-cx, y = ty*IT-cy, r = hash(tx*13, ty*29);
+    if (t === '#'){ const below = (ty+1 < IH && ty+1 >= 0 && tx >= 0 && tx < IW) ? INT[ty+1][tx] : '#';
+      if (below !== '#'){ sctx.fillStyle = tone(0.18); sctx.fillRect(x, y, IT, IT); sctx.fillStyle = tone(0.42); sctx.fillRect(x, y+IT-3, IT, 3); sctx.fillStyle = tone(0.08); sctx.fillRect(x, y+IT-1, IT, 1); } // wall face
+      continue; }
+    sctx.fillStyle = tone(0.6 + (r-0.5)*0.06); sctx.fillRect(x, y, IT, IT);
+    sctx.fillStyle = tone(0.34); sctx.fillRect(x, y, IT, 1); sctx.fillRect(x, y, 1, IT);
+    if (r > 0.8){ sctx.fillStyle = tone(0.95); sctx.fillRect(x+Math.floor(r*9), y+Math.floor(r*13)%IT, 1, 1); }
+    if (t === 'S'){ for (let i = 0; i < IT; i += 3){ sctx.fillStyle = tone(0.72); sctx.fillRect(x, y+i, IT, 2); sctx.fillStyle = tone(0.12); sctx.fillRect(x, y+i+2, IT, 1); } }
+    if (/[a-e]/.test(t)){ sctx.fillStyle = tone(0.15); sctx.fillRect(x+1, y+1, IT-2, IT-2); sctx.fillStyle = tone(0.9);               // a seam: a rune on the floor
+      for (let i = 0; i < 4; i++) sctx.fillRect(x+3+((i*5+t.charCodeAt(0))%6), y+3+i*2, 1, 1); }
+    if (t === 'X'){ sctx.fillStyle = tone(0.85); sctx.fillRect(x+2, y+2, IT-4, IT-4); }
+    if (t === 'W'){ sctx.fillStyle = tone(0.2); sctx.fillRect(x, y, IT, IT); sctx.fillStyle = tone(0.34); for (let i = 0; i < 3; i++) sctx.fillRect(x + ((i*4 + (frame>>3) + tx) % IT), y + 3 + i*3, 3, 1); }   // water on the floor
+    if (t === 'O' && !player.relic && inside.site === 'cistern'){ sctx.fillStyle = tone(0.9); for (let a = 0; a < 6.3; a += 0.3) sctx.fillRect(x+6+Math.cos(a)*5|0, y+6+Math.sin(a)*5|0, 1, 1); sctx.fillStyle = EM; sctx.fillRect(x+5, y+5, 2, 2); }
+    if (t === 'O' && !player.relic && inside.site === 'barrow'){ sctx.fillStyle = tone(0.06); sctx.fillRect(x+3, y-6, 6, 8); sctx.fillRect(x+1, y+2, 10, 3); sctx.fillStyle = tone(0.7); sctx.fillRect(x+5, y-8, 2, 2); sctx.fillStyle = EM; sctx.fillRect(x+5, y+2, 2, 1); }
+    if (t === 'O' && !player.shard && inside.site === 'tower'){ sctx.fillStyle = tone(0.06); sctx.fillRect(x+5, y-14, 3, 20); sctx.fillStyle = tone(0.6); sctx.fillRect(x+7, y-13, 1, 16); sctx.fillStyle = EM; sctx.fillRect(x+6, y-16, 1, 2); }
+  }
+  drawPlayer(W/2, H/2);
+}
+// four-frame walk: contact, pass, contact, pass. weight shifts over the planted leg, torso rises on the pass.
+function drawPlayer(x, y){
+  if (player.rise > 0){ const r = player.rise, ink = tone(0.04); sctx.fillStyle = ink;                                                              // on the ground, then on one knee, then up
+    if (r > 85){ sctx.fillRect(x-6, y-2, 12, 2); sctx.fillRect(x-8, y-3, 3, 2); sctx.fillRect(x-9, y-4, 5, 1); sctx.fillRect(x+3, y-3, 2, 1);          // lying: body, head, hat brim, a hand
+      sctx.fillStyle = tone(0.5); sctx.fillRect(x+6, y-1, 1, 1); return; }
+    if (r > 40){ const k = (85 - r)/45; sctx.fillRect(x-2, y-6 - k*2|0, 4, 6 + k*2|0); sctx.fillRect(x-1, y-9 - k*2|0, 3, 3); sctx.fillRect(x-3, y-10 - k*2|0, 7, 1);   // kneeling, rising
+      sctx.fillRect(x-3, y-3, 2, 3); sctx.fillRect(x+2, y-4 - k*2|0, 2, 2); sctx.fillStyle = tone(0.5); sctx.fillRect(x+1, y-8 - k*2|0, 1, 1); return; }
+    sctx.fillRect(x-1, y-12, 3, 3); sctx.fillRect(x-3, y-10, 7, 1); sctx.fillRect(x-1, y-9, 3, 2); sctx.fillRect(x-2, y-7, 4, 5); sctx.fillRect(x-1, y-2, 1, 2); sctx.fillRect(x+1, y-2, 1, 2);   // standing, still
+    sctx.fillRect(x-3, y-6 + (r%20 < 10 ? 1 : 0), 1, 3); sctx.fillRect(x+3, y-6, 1, 3); return; }
+  const fc = player.face, walking = player.moving;
+  const f = walking ? Math.floor(player.step)%4 : -1;
+  const contact = f === 0 || f === 2, pass = f === 1 || f === 3;
+  const rise = pass ? -1 : 0;                                  // body up when legs pass under
+  const sway = f === 0 ? -1 : f === 2 ? 1 : 0;                 // hips over the planted leg
+  const lean = walking ? fc : 0;
+  const ink = tone(0.06), light = tone(0.85);
+  sctx.fillStyle = ink;
+  sctx.fillRect(x-1+lean, y-9+rise, 3, 2);                     // face under the brim
+  sctx.fillRect(x-3+lean, y-10+rise, 7, 1);                    // brim
+  sctx.fillRect(x-1+lean, y-13+rise, 3, 3);                    // crown
+  { const wp = audio.windPower(); const wx = -1, wy = 0.15;   // wind out of the east
+    let vx = wx*wp*6 - (walking ? fc*1.5 : 0), vy = wy*wp*6 + 0.6; const L = Math.max(2, Math.round(Math.hypot(vx,vy)));
+    for (let i = 1; i <= L; i++){ const fl = wp > 0.35 ? Math.round(Math.sin(frame*0.35 + i*1.1)*(i/L)) : 0;
+      sctx.fillRect(Math.round(x + vx*i/L*1.0) - 1, Math.round(y-7+rise + vy*i/L + i*0.45 + fl), i < L*0.5 ? 3 : 2, 1); } }  // cape streams with the wind
+  sctx.fillRect(x-1+(lean>0?0:lean), y-7+rise, 3, 3);          // chest
+  sctx.fillRect(x-1+sway, y-4+rise, 3, 1);                     // hips
+  if (f < 0){ sctx.fillRect(x-1, y-3, 1, 3); sctx.fillRect(x+1, y-3, 1, 3);
+    sctx.fillRect(x-2, y-6, 1, 3); }                            // idle
+  else {
+    const fwd = fc;                                             // stride: one leg ahead, one behind
+    const legA = contact ? (f === 0 ? 1 : -1) : 0, legB = -legA;
+    sctx.fillRect(x-1+legA*fwd+(legA>0?1:0), y-3, 1, contact ? 3 : 3); // leg A
+    sctx.fillRect(x+1+legB*fwd-(legB>0?0:1)*(legB<0?1:0), y-3, 1, pass ? 2 : 3); // leg B, lifted on pass
+    if (pass){ sctx.fillRect(x+fwd, y-1, 1, 1); }                // toe of the swinging foot
+    sctx.fillRect(x-2-legA*fwd, y-6+rise, 1, 3);                // far arm swings against the legs
+  }
+  sctx.fillStyle = light; sctx.fillRect(x+sway, y-3, 1, 2);     // daylight between the legs
+  if (player.lit && player.oil > 0){ sctx.fillStyle = ink; sctx.fillRect(x+2*fc, y-6+rise, 1, 1);
+    sctx.fillStyle = EM; sctx.fillRect(x+3*fc, y-5+rise+(pass?1:0), 1, 2); }
+  else { sctx.fillStyle = ink; sctx.fillRect(x+2*fc, y-5+rise, 1, 2); }
+}
+
+// ---------- post: light, tilt-shift blur, dither ----------
+function boxBlur(src, dst, S){
+  if (closeup.on){ dst.set(src); return; }                                                            // close-ups are sharp everywhere
+  const W1 = W+1;
+  for (let x = 0; x <= W; x++) S[x] = 0;
+  for (let y = 1; y <= H; y++){ let row = 0; S[y*W1] = 0;
+    for (let x = 1; x <= W; x++){ row += src[(y-1)*W + (x-1)]; S[y*W1+x] = S[(y-1)*W1+x] + row; } }
+  const box = (x, y, r) => { const x0 = Math.max(0, x-r), x1 = Math.min(W-1, x+r), y0 = Math.max(0, y-r), y1 = Math.min(H-1, y+r);
+    return (S[(y1+1)*W1 + x1+1] - S[y0*W1 + x1+1] - S[(y1+1)*W1 + x0] + S[y0*W1 + x0]) / ((x1-x0+1)*(y1-y0+1)); };
+  for (let y = 0, i = 0; y < H; y++) for (let x = 0; x < W; x++, i++){ const rf = rad[i];
+    if (rf <= 0.01){ dst[i] = src[i]; continue; }
+    const r0 = Math.floor(rf), t = rf - r0, a = r0 === 0 ? src[i] : box(x, y, r0);                         // blend between the two nearest whole radii
+    dst[i] = t < 0.02 ? a : a + (box(x, y, r0 + 1) - a)*t; }
+}
+function post(){
+  const img = sctx.getImageData(0,0,W,H).data;
+  const cx = Math.round(player.x - W/2), cy = Math.round(player.y - H/2);
+  const lights = [];
+  if (closeup.on){ const g = closeupGeom(); const torchRoom = closeup.kind === 'obelisk' || closeup.kind === 'lens' || closeup.kind === 'bell' || closeup.kind === 'well';
+    if (torchRoom){ const fl = Math.sin(frame*0.31)*0.06 + Math.sin(frame*0.13)*0.04; lights.push([W*0.14, H*0.2, W*1.4, 0.8 + fl]); lights.push([W*0.86, H*0.2, W*1.4, 0.8 - fl]); lights.push([W/2, H*0.5, W*1.2, 0.55]); lights.push([W/2, H*0.78, W*1.0, 0.5]); }   // two torches on the wall: your hands are free
+    else { if (player.lit && closeup.kind !== 'talk') lights.push([g.lamp.x, g.lamp.y-14, W*1.3, 0.95]); lights.push([W/2, H*0.45, W*1.1, player.lit ? 0.4 : 0.7]); if (!player.lit) lights.push([g.lamp.x, g.lamp.y-12, W*0.35, 0.5]); }
+    if (closeup.kind === 'talk'){ lights.push([W*0.7, H*0.6, W*0.9, 0.6]); lights.push([W*0.5, H*0.55, W*0.9, 0.5]); lights.push([W*0.33, H*0.72, W*0.3, 0.4]); } if (closeup.kind === 'altar' && closeup.done > 380){ const k = Math.min(1, (closeup.done-380)/240); lights.push([W/2, H*0.45, W*(0.4 + k*1.2), 0.5 + k*0.7]); } if (closeup.flame > 0) lights.push([g.wick.x, g.wick.y, W*0.9*closeup.flame, 0.8]); }
+  else if (player.lit && player.oil > 0 && player.relic === 'lens'){ const t = frame*0.017; for (let k = 0; k < 4; k++){ const a = t*(k % 2 ? 1 : -0.7) + k*1.57, r = 14 + Math.sin(t*1.9 + k*2.3)*9 + Math.sin(t*0.6 + k)*5;   // the lens: four lobes of light that wander and swell, an orbital
+      lights.push([W/2 + Math.cos(a)*r, H/2 - 2 + Math.sin(a)*r*0.6, 30 + Math.sin(t*1.3 + k*1.1)*10 + player.oil*0.12, 0.13 + Math.sin(t*2.4 + k)*0.05]); } }
+  else if (player.lit && player.oil > 0) lights.push([W/2, H/2-2, 40 + player.oil*0.2, 0.2]);
+  if (inside.on && inside.site === 'barrow'){ lights.push([W/2, H/2-2, 110, player.lit ? 0.5 : 0.22]); }   // the barrow: dark, but your lamp carries further in still air, and the stone itself gives a little back
+  if (!inside.on && !closeup.on) beacons.forEach(b => { if (b.lit) lights.push([b.x-cx, b.y-cy-40, 140, 0.45]); });
+  if (world.after && player.shard) lights.push([burden.x-cx, burden.y-cy, player.surge > 0 ? 70 : 46, 0.3 + Math.sin(frame*0.2)*0.04 + (player.surge > 0 ? 0.2 : 0)]);
+  if (player.relic === 'lens' && !player.lit) lights.push([W/2, H/2-4, 24 + Math.sin(frame*0.1)*4, 0.3]);
+  if (!inside.on && !closeup.on){ const talking = false, b = Math.floor(audio.beatPhase()*90), pulse = talking ? 0.7 : b < 26 ? 1 - b/26 : b >= 45 && b < 55 ? (1 - (b-45)/10)*0.35 : 0; lights.push([SHAMAN.x-cx-34, SHAMAN.y-cy+2, talking ? 44 : 80, 0.2 + 0.5*pulse]); lights.push([SHAMAN.x-cx-46, SHAMAN.y-cy+4, 26, 0.16]); }   // his glow, in time with the drum, and a small fire that is not
+  if (world.ended){ const age = Math.min(1, (frame - world.endT)/240), ph = audio.beatPhase(), pulse = ph < 0.25 ? 1 - ph*2.4 : 0.4 + 0.1*Math.sin(ph*12); lights.push([SHAMAN.x-cx, SHAMAN.y-cy+8, 60 + age*420, (0.6 + 0.35*pulse)*age]); }   // the chamber breathes with the drum
+  if (world.after){ const near = [];                                                                             // the fire is a light of its own now
+    for (const [k, f0] of fire){ const age = frame - f0; if (age > 900) continue; const [tx, ty] = k.split(',').map(Number), lx = tx*T+4-cx, ly = ty*T+4-cy;
+      if (lx < -70 || lx > W+70 || ly < -70 || ly > H+70) continue; if (hash(tx, ty*11) < 0.55) continue; near.push([lx, ly-8, age]); }
+    near.sort((a, b) => Math.hypot(a[0]-W/2, a[1]-H/2) - Math.hypot(b[0]-W/2, b[1]-H/2));
+    for (let i = 0; i < near.length && i < 18; i++){ const [lx, ly, age] = near[i], glow = age < 720 ? 1 : 1 - (age-720)/180; lights.push([lx, ly, 62, (0.3 + Math.sin(frame*0.17 + lx)*0.04)*glow]); }
+    hollows.forEach(h => lights.push([h.x-cx, h.y-cy-8, 22, 0.14])); }
+  others.forEach(o => { if (o.burning && frame - o.burning < 1500) lights.push([o.x-cx, o.y-cy-8, 40, 0.28]); });
+  if (!inside.on && !closeup.on && !player.relic && !world.relics[0]) lights.push([TOWER.tx*T-cx, TOWER.ty*T-cy-8, 40, 0.35]);   // the tower's door
+  if (!inside.on && !closeup.on) lights.push([91*T-cx, (Math.round(road(91))-6)*T-cy, 30, 0.22]);                             // the shrine's coal
+  if (!inside.on && !closeup.on && world.lhLit) { const lh = LH; const a = frame*0.02; lights.push([lh.x-cx, lh.y-cy-40, 230, 0.55, a, 0.42]); lights.push([lh.x-cx, lh.y-cy-40, 30, 0.2]); }   // sweeping cone + glow at the lamp
+  const east = closeup.on ? 0.22 : inside.on ? (inside.site === 'barrow' ? 0.4 : 0.08) : Math.min(0.25, Math.max(0, (player.x/T - 110)/75)) + (world.after ? 0.1 : 0);
+  const base = (0.7 - east) * (doom > 0 ? (doom < 150 ? Math.max(0, 1 - doom/150) : Math.min(1, (doom-150)/100)) : 1);
+  const BW = W >> 1, BH = H >> 1, lift = closeup.on ? 0.12 : 0.7;                                                            // in a close-up, ink stays ink: dark things do not catch the light                                                                          // the light is computed on 2x2 blocks: a quarter of the work
+  const vis = lights.filter(l => l[0] + l[2] > 0 && l[0] - l[2] < W && l[1] + l[2]/2 > 0 && l[1] - l[2]/2 < H);              // lights that cannot reach the screen cost nothing
+  for (let by = 0, j = 0; by < BH; by++) for (let bx = 0; bx < BW; bx++, j++){ const x = bx*2 + 1, y = by*2 + 1; let L = base;
+    for (const l of vis){ const dx = x-l[0], dy = (y-l[1]); const d2 = dx*dx+dy*dy*4; const R2 = l[2]*l[2];   // ground is foreshortened: y counts double
+      if (d2 >= R2) continue;
+      if (l.length > 4){ let da = Math.atan2(dy*2, dx) - l[4]; da = Math.abs(((da + Math.PI) % (2*Math.PI) + 2*Math.PI) % (2*Math.PI) - Math.PI);   // cone: angular falloff
+        if (da > l[5]) continue; const f = (1 - Math.sqrt(d2)/l[2]) * (1 - da/l[5]); L += f*l[3]; }
+      else { const f = 1 - d2/R2; L += f*f*l[3]; } }
+    lmap[j] = L > 0.92 ? 0.92 : L; }
+  for (let y = 0, i = 0; y < H; y++){ const brow = (y >> 1)*BW; for (let x = 0; x < W; x++, i++){
+    const r = img[i*4], g = img[i*4+1], ember = r - g > 120, L = lmap[brow + (x >> 1)];
+    const v = r/255; lum[i] = ember ? 0.95*L : v*base + (L > base ? (L - base)*(lift + (1 - lift)*v) : v*(L - base)); acc[i] = ember ? 1 : 0; } }   // the ambient is filtered by the surface; a lamp's light lands on it almost whole
+  boxBlur(lum, tmp, sat);                                                                                    // only the luminance is blurred; ember stays crisp
+  const px = outImg.data, gshift = (frame*1237) & 4095;
+  for (let y = 0, i = 0; y < H; y++) for (let x = 0; x < W; x++, i++){
+    const t = (BAYER[(x&3)+((y&3)<<2)] + 0.5)/16;
+    const grain = GRAIN[(i + gshift) & 4095];                                   // grain: enough to feel like film, not enough to hide the world
+    let c;
+    if (acc[i] > 0) c = EMBER[tmp[i] + grain > 0.5 ? 1 : 0];
+    else { let q = Math.floor((tmp[i] + grain)*7 + 0.5 + (t - 0.5)*0.32); q = q < 0 ? 0 : q > 7 ? 7 : q; c = TONES[q]; }
+    px[i*4] = c[0]; px[i*4+1] = c[1]; px[i*4+2] = c[2]; px[i*4+3] = 255;
+  }
+  octx.putImageData(outImg, 0, 0);
+  if (closeup.on) drawCloseupUI();
+  drawSnow();
+}
+// close-up controls drawn after the dither, so they survive the dark and the blur at the screen's edge
+function drawCloseupUI(){ const g = closeupGeom(), lp = g.lamp;
+  octx.fillStyle = player.lit ? '#e6ebe8' : '#e07a34';
+  if (closeup.kind === 'beacon') for (let a = 0; a < 6.3; a += 0.28){ if (!player.lit && frame % 60 >= 45) break; octx.fillRect(lp.x + Math.cos(a)*17|0, lp.y-12 + Math.sin(a)*17*0.9|0, 1, 1); }   // ring round the lantern: tap
+  if (!player.lit && closeup.kind === 'beacon'){ octx.fillRect(lp.x-6, lp.y-20, 1, 16); octx.fillRect(lp.x+5, lp.y-20, 1, 16); octx.fillRect(lp.x-6, lp.y-20, 12, 1); octx.fillRect(lp.x-6, lp.y-5, 12, 1); octx.fillRect(lp.x-2, lp.y-25, 4, 1); }   // its outline when out
+  if (closeup.kind === 'talk' || (closeup.kind === 'altar' && closeup.done > 0)) return;
+  octx.fillStyle = player.lit ? 'rgba(230,235,232,0.7)' : '#e07a34';
+  for (let x = W*0.4; x < W*0.6; x += 3) octx.fillRect(x|0, H*0.885|0, 1, 1); octx.fillRect(W*0.49|0, H*0.875|0, 1, 1); octx.fillRect(W*0.5|0, H*0.895|0, 1, 1);   // the step-back strip, above the HUD
+}
+// foreground snow: between you and the world, drifting on the same wind that pulls the cape
+const flakes = []; for (let i = 0; i < 110; i++) flakes.push({ x: Math.random()*400, y: Math.random()*400, v: 0.25 + Math.random()*0.55, ph: Math.random()*7, near: Math.random() < 0.18 });
+function drawSnow(){
+  if (inside.on || closeup.on) return;
+  const wp = audio.windPower(), gust = Math.max(0, wp - 0.15);
+  octx.fillStyle = 'rgba(232,236,234,0.9)';
+  for (const f of flakes){ const spd = f.near ? f.v*1.9 : f.v;
+    f.y += spd; f.x += -gust*3.2*(f.near ? 1.6 : 1) - 0.12 + Math.sin(frame*0.05 + f.ph)*0.25;
+    if (f.y > H){ f.y = -2; f.x = Math.random()*W; } if (f.x < -2) f.x = W; if (f.x > W+2) f.x = 0;
+    const sz = f.near ? 2 : 1; if (!f.near && ((frame + (f.ph*10|0)) % 7 === 0)) continue;             // far flakes flicker
+    octx.fillRect(Math.round(f.x), Math.round(f.y), sz, sz); }
+}
+
+// ---------- hud / loop ----------
+const stamEl = document.getElementById('stam'), lampIc = document.getElementById('ic-lamp'), obIc = document.getElementById('ic-obelisk'), mapIc = document.getElementById('ic-map'), lensIc = document.getElementById('ic-lens'), bellIc = document.getElementById('ic-bell');
+mapIc.addEventListener('pointerdown', e => { e.stopPropagation(); if (!world.map || inside.on) return; if (closeup.on && closeup.kind === 'map'){ closeup.on = false; return; } if (!closeup.on) openCloseup('map', null); });
+const oilEl = document.getElementById('oil'), lightsEl = document.getElementById('lights'), hintEl = document.getElementById('hint');
+function hud(){
+  oilEl.style.width = player.oil+'%';
+  oilEl.style.background = player.oil < 25 ? '#e07a34' : '#c4cbc8';
+  lightsEl.textContent = `lights ${beacons.filter(b=>b.lit).length}/${beacons.length}   relics ${world.relics.filter(Boolean).length}/3`;
+  stamEl.style.width = (player.stam/player.stamMax*100)+'%'; document.getElementById('sbar').style.width = player.stamMax+'%'; stamEl.style.background = player.winded ? '#e07a34' : player.surge > 0 ? '#e6ebe8' : '#8f9a97';
+  lampIc.className.baseVal = player.lit ? '' : 'dim'; obIc.className.baseVal = player.relic === 'obelisk' ? '' : 'off'; lensIc.className.baseVal = player.relic === 'lens' ? '' : 'off'; bellIc.className.baseVal = player.relic === 'bell' ? '' : 'off'; mapIc.className.baseVal = world.map ? '' : 'off';
+  hintEl.textContent = player.winded ? 'winded' : `oil ${Math.round(player.oil)}`;
+}
+let errShown = false;
+function loop(){ try { update(); draw(); post(); if (frame % 6 === 0) hud(); }
+  catch (e){ if (!errShown){ errShown = true; const m = document.getElementById('msg'); m.textContent = 'error: ' + (e && e.message) + ' [' + ((e && e.stack) || '').split('\n')[1] + ']'; m.style.opacity = 1; msgT = 1e9; console.error(e); } }
+  requestAnimationFrame(loop); }
+addEventListener('error', ev => { if (errShown) return; errShown = true; const m = document.getElementById('msg'); m.textContent = 'error: ' + ev.message + ' line ' + ev.lineno; m.style.opacity = 1; msgT = 1e9; });
+loop();
+})();
+</script>
+</body>
+</html>
